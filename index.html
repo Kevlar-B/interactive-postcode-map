@@ -6,15 +6,35 @@
     <title>Service Coverage Map</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.4.1/papaparse.min.js"></script>
 
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; }
         header { padding: 10px 20px; background-color: #f8f9fa; border-bottom: 1px solid #dee2e6; }
-        h1 { margin: 0; font-size: 1.5em; }
-        #status { padding: 0 20px 10px; font-style: italic; color: #6c757d; }
+        h1 { margin: 0; font-size: 1.5em; display: inline-block; vertical-align: middle; }
+        #status { padding: 5px 20px 10px; font-style: italic; color: #6c757d; }
         #map { flex-grow: 1; width: 100%; background-color: #e9ecef; }
+
+        /* Styles for the new filter controls */
+        #filter-controls {
+            display: flex;
+            gap: 20px;
+            padding: 10px 20px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            flex-wrap: wrap;
+        }
+        #filter-controls label {
+            cursor: pointer;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+        }
+        #filter-controls input {
+            margin-right: 8px;
+        }
     </style>
 </head>
 <body>
@@ -22,18 +42,43 @@
     <header>
         <h1>Service Launch Coverage</h1>
     </header>
+
+    <div id="filter-controls">
+        <strong>Filter by service:</strong>
+        <label><input type="checkbox" id="solar-filter" checked> 🟡 Solar Panels</label>
+        <label><input type="checkbox" id="heatpump-filter" checked> 🔵 Heat Pumps</label>
+        <label><input type="checkbox" id="ev-filter" checked> 🟢 EV Chargers</label>
+    </div>
+    
     <div id="status">Initializing map...</div>
     
     <div id="map"></div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
     <script>
-        // --- Configuration --- //
-        const MAP_CENTER_COORDS = [54.5, -3.4]; // Centered on the UK
-        const MAP_INITIAL_ZOOM = 6;
-        const POSTCODES_API_URL = 'https://api.postcodes.io/postcodes';
-        const BATCH_SIZE = 100;
+        // --- Global Variables --- //
+        let allMapMarkers = []; // Will store all our marker objects
+        const map = L.map('map').setView([54.5, -3.4], 6);
+        const statusElement = document.getElementById('status');
+        
+        // --- Map Initialization --- //
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // --- Custom Marker Icons --- //
+        // Create different colored icons for visual distinction
+        const createColoredIcon = (color) => new L.Icon({
+            iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+        const goldIcon = createColoredIcon('gold');
+        const blueIcon = createColoredIcon('blue');
+        const greenIcon = createColoredIcon('green');
+        const violetIcon = createColoredIcon('violet'); // Default for multiple services
 
         // --- Embedded CSV Data --- //
         const csvData = `
@@ -535,63 +580,60 @@ OX7,1,0,0
 OX9,1,0,0
 `;
 
-        // --- Map Initialization --- //
-        const map = L.map('map').setView(MAP_CENTER_COORDS, MAP_INITIAL_ZOOM);
-        const statusElement = document.getElementById('status');
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-
         /**
-         * The main function to load and plot the data.
+         * Main function to fetch, process, and plot all data.
          */
-        async function processAndPlotData() {
+        async function initializeMap() {
             try {
-                // --- Step 1: Parse the embedded CSV data --- //
+                // 1. Parse Data
                 statusElement.textContent = 'Parsing coverage data...';
                 const parsedData = Papa.parse(csvData.trim(), { header: true, skipEmptyLines: true }).data;
-
-                // --- Step 2: Extract postcodes for API lookup --- //
                 const postcodes = parsedData.map(row => row.Region).filter(pc => pc);
-                if (postcodes.length === 0) throw new Error("No postcodes found in the data.");
+                if (postcodes.length === 0) throw new Error("No postcodes found.");
+                
+                // 2. Fetch Coordinates
                 statusElement.textContent = `Found ${postcodes.length} postcodes. Fetching coordinates...`;
+                const allCoordinates = await fetchCoordinatesInBatches(postcodes);
+                statusElement.textContent = `Found coordinates for ${allCoordinates.length} postcodes. Creating map...`;
 
-                // --- Step 3: Fetch coordinates in batches from postcodes.io --- //
-                const allCoordinates = [];
-                for (let i = 0; i < postcodes.length; i += BATCH_SIZE) {
-                    const batch = postcodes.slice(i, i + BATCH_SIZE);
-                    const apiResponse = await fetch(POSTCODES_API_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ postcodes: batch })
-                    });
-                    const json = await apiResponse.json();
-                    if (json.status !== 200) throw new Error(`API Error: ${json.error}`);
-                    const validResults = json.result.filter(res => res.result !== null);
-                    allCoordinates.push(...validResults);
-                }
-                statusElement.textContent = `Found coordinates for ${allCoordinates.length} postcodes. Plotting...`;
-
-                // --- Step 4: Create a lookup map for easy access to original data --- //
-                const coverageDataMap = new Map();
-                parsedData.forEach(row => coverageDataMap.set(row.Region, row));
-
-                // --- Step 5: Plot markers on the map --- //
+                // 3. Create Markers
+                const coverageDataMap = new Map(parsedData.map(row => [row.Region, row]));
                 allCoordinates.forEach(data => {
                     const postcodeInfo = data.result;
                     const originalRow = coverageDataMap.get(postcodeInfo.postcode);
                     if (originalRow) {
+                        const hasSolar = originalRow['Solar Panels'] === '1';
+                        const hasHeatPump = originalRow['Heat Pumps'] === '1';
+                        const hasEv = originalRow['Ev Chargers'] === '1';
+
+                        let icon = violetIcon; // Default for multiple services
+                        const serviceCount = (hasSolar ? 1:0) + (hasHeatPump ? 1:0) + (hasEv ? 1:0);
+                        if (serviceCount === 1) {
+                            if(hasSolar) icon = goldIcon;
+                            if(hasHeatPump) icon = blueIcon;
+                            if(hasEv) icon = greenIcon;
+                        }
+
                         let popupContent = `<b>Postcode: ${originalRow.Region}</b><br><hr>`;
-                        popupContent += `Solar Panels: ${originalRow['Solar Panels'] === '1' ? '✔️ Yes' : '❌ No'}<br>`;
-                        popupContent += `Heat Pumps: ${originalRow['Heat Pumps'] === '1' ? '✔️ Yes' : '❌ No'}<br>`;
-                        popupContent += `EV Chargers: ${originalRow['Ev Chargers'] === '1' ? '✔️ Yes' : '❌ No'}`;
+                        popupContent += `Solar Panels: ${hasSolar ? '✔️ Yes' : '❌ No'}<br>`;
+                        popupContent += `Heat Pumps: ${hasHeatPump ? '✔️ Yes' : '❌ No'}<br>`;
+                        popupContent += `EV Chargers: ${hasEv ? '✔️ Yes' : '❌ No'}`;
                         
-                        L.marker([postcodeInfo.latitude, postcodeInfo.longitude])
-                            .addTo(map)
-                            .bindPopup(popupContent);
+                        const marker = L.marker([postcodeInfo.latitude, postcodeInfo.longitude], {
+                            icon: icon,
+                            // Store service data directly on the marker for filtering
+                            hasSolar: hasSolar,
+                            hasHeatPump: hasHeatPump,
+                            hasEv: hasEv
+                        }).bindPopup(popupContent);
+                        
+                        allMapMarkers.push(marker);
                     }
                 });
-                statusElement.textContent = `Done. ${allCoordinates.length} locations plotted.`;
+
+                setupFilterListeners();
+                updateMapVisibility(); // Initial draw
+                statusElement.textContent = `Map ready. ${allMapMarkers.length} locations loaded.`;
 
             } catch (error) {
                 console.error("Map Error:", error);
@@ -600,8 +642,60 @@ OX9,1,0,0
             }
         }
 
-        // Run the main function
-        processAndPlotData();
+        async function fetchCoordinatesInBatches(postcodes) {
+            let allCoords = [];
+            for (let i = 0; i < postcodes.length; i += 100) {
+                const batch = postcodes.slice(i, i + 100);
+                const apiResponse = await fetch('https://api.postcodes.io/postcodes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ postcodes: batch })
+                });
+                const json = await apiResponse.json();
+                if (json.status !== 200) throw new Error(`API Error: ${json.error}`);
+                allCoords.push(...json.result.filter(res => res.result !== null));
+            }
+            return allCoords;
+        }
+
+        /**
+         * Adds or removes markers from the map based on filter controls.
+         */
+        function updateMapVisibility() {
+            const showSolar = document.getElementById('solar-filter').checked;
+            const showHeatPump = document.getElementById('heatpump-filter').checked;
+            const showEv = document.getElementById('ev-filter').checked;
+
+            let displayedCount = 0;
+            allMapMarkers.forEach(marker => {
+                // Determine if a marker should be visible
+                const shouldShow = 
+                    (showSolar && marker.options.hasSolar) ||
+                    (showHeatPump && marker.options.hasHeatPump) ||
+                    (showEv && marker.options.hasEv);
+
+                if (shouldShow) {
+                    marker.addTo(map);
+                    displayedCount++;
+                } else {
+                    marker.removeFrom(map);
+                }
+            });
+            statusElement.textContent = `Displaying ${displayedCount} of ${allMapMarkers.length} locations.`;
+        }
+        
+        /**
+         * Sets up the event listeners for the filter checkboxes.
+         */
+        function setupFilterListeners() {
+            document.getElementById('solar-filter').addEventListener('change', updateMapVisibility);
+            document.getElementById('heatpump-filter').addEventListener('change', updateMapVisibility);
+            document.getElementById('ev-filter').addEventListener('change', updateMapVisibility);
+        }
+
+        // Run the main function to start the process
+        initializeMap();
+
     </script>
 </body>
 </html>
