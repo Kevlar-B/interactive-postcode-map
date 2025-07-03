@@ -37,7 +37,8 @@
 
     <script>
         // --- Configuration --- //
-        const GEOJSON_URL = 'https://raw.githubusercontent.com/martinjc/UK-GeoJSON/master/json/administrative/gb/pfa.json';
+        // NEW: Using a smaller, optimized GeoJSON file for much faster loading.
+        const GEOJSON_URL = 'https://gist.githubusercontent.com/eoiny/21834925765612658428522744733364/raw/b6408869c9a22df651469ed1a403487c2b220263/uk-postcode-areas-simplified.geojson';
         const STATUS_ELEMENT = document.getElementById('status');
         const COLORS = {
             solar: '#FFD700', // Gold
@@ -49,12 +50,11 @@
         let serviceDataByArea = new Map();
 
         // --- Map Initialization --- //
-        // Set map bounds to UK/Ireland, default zoom to 5, and enable zoom controls (which is default)
         const bounds = L.latLngBounds(L.latLng(49, -11), L.latLng(61, 2));
         const map = L.map('map', {
             maxBounds: bounds,
             minZoom: 5
-        }).setView([54.5, -2.5], 5); // Zoom level 5 is more zoomed out
+        }).setView([54.5, -2.5], 5);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -569,7 +569,9 @@ OX9,1,0,0
 
                 STATUS_ELEMENT.textContent = 'Downloading map area data...';
                 const response = await fetch(GEOJSON_URL);
-                if (!response.ok) throw new Error('Failed to download map data.');
+                if (!response.ok) {
+                    throw new Error('Failed to download map data. Status: ' + response.status);
+                }
                 const geoJsonData = await response.json();
 
                 STATUS_ELEMENT.textContent = 'Creating map layers...';
@@ -590,8 +592,7 @@ OX9,1,0,0
         }
         
         /**
-         * NEW: A simple, built-in CSV parser to replace the external PapaParse library.
-         * This function converts the CSV string into an array of objects.
+         * A simple, built-in CSV parser.
          */
         function simpleCsvParse(csvString) {
             const rows = csvString.trim().split('\n');
@@ -600,7 +601,7 @@ OX9,1,0,0
                 const values = rowString.split(',');
                 let obj = {};
                 headers.forEach((header, index) => {
-                    obj[header.trim()] = values[index].trim();
+                    obj[header.trim()] = values[index] ? values[index].trim() : '';
                 });
                 return obj;
             });
@@ -613,7 +614,7 @@ OX9,1,0,0
             const parsedData = simpleCsvParse(csvData);
             
             parsedData.forEach(row => {
-                // Extract the postcode area (e.g., 'BD' from 'BD1', 'S' from 'S10')
+                if (!row.Region) return;
                 const match = row.Region.match(/^[A-Z]+/);
                 if (!match) return;
                 const area = match[0];
@@ -637,11 +638,7 @@ OX9,1,0,0
             const showHeatPump = document.getElementById('heatpump-filter').checked;
             const showEv = document.getElementById('ev-filter').checked;
 
-            // Extract the area code (e.g., 'Birmingham' -> 'B') from the GeoJSON properties
-            const areaNameMatch = feature.properties.PFA_NAME.match(/\((\w+)\)/);
-            if (!areaNameMatch) return { fillColor: COLORS.none, fillOpacity: 0.1 }; // No code, make it transparent
-            const areaCode = areaNameMatch[1];
-            
+            const areaCode = feature.properties.name; // The new GeoJSON uses 'name' property
             const data = serviceDataByArea.get(areaCode);
             
             let color = COLORS.none;
@@ -675,12 +672,9 @@ OX9,1,0,0
          * Logic for interacting with each feature, like popups and highlights.
          */
         function onEachFeature(feature, layer) {
-            const areaNameMatch = feature.properties.PFA_NAME.match(/\((\w+)\)/);
-            if (!areaNameMatch) return;
-            const areaCode = areaNameMatch[1];
-            
+            const areaCode = feature.properties.name;
             const data = serviceDataByArea.get(areaCode);
-            let popupContent = `<b>Postcode Area: ${areaCode}</b> (${feature.properties.PFA_NAME.split('(')[0].trim()})`;
+            let popupContent = `<b>Postcode Area: ${areaCode}</b>`;
 
             if (data) {
                 popupContent += `<br><hr>Service Available in this Area:`;
@@ -688,33 +682,24 @@ OX9,1,0,0
                 if(data.hasHeatPump) popupContent += `<br>✔️ Heat Pumps`;
                 if(data.hasEv) popupContent += `<br>✔️ EV Chargers`;
             } else {
-                popupContent += `<br><hr>No service data for this area.`;
+                popupContent += `<br><hr>No service data for this postcode area.`;
             }
             layer.bindPopup(popupContent);
 
-            // Highlight feature on mouseover
             layer.on({
                 mouseover: e => e.target.setStyle({ weight: 3, color: '#333', dashArray: '' }),
                 mouseout: e => geoJsonLayer.resetStyle(e.target)
             });
         }
 
-        /**
-         * Sets up event listeners for filter checkboxes to re-style the map.
-         */
         function setupFilterListeners() {
             document.querySelectorAll('#filter-controls input[type="checkbox"]').forEach(checkbox => {
                 checkbox.addEventListener('change', () => {
-                    if (geoJsonLayer) {
-                        geoJsonLayer.setStyle(styleFeature);
-                    }
+                    if (geoJsonLayer) geoJsonLayer.setStyle(styleFeature);
                 });
             });
         }
         
-        /**
-         * Adds a color legend to the map for clarity.
-         */
         function addLegend() {
             const legend = L.control({position: 'bottomright'});
             legend.onAdd = function (map) {
@@ -732,7 +717,6 @@ OX9,1,0,0
             legend.addTo(map);
         }
 
-        // --- Run the application --- //
         initializeMap();
     </script>
 </body>
