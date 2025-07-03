@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UK Postcode Coverage Map</title>
+    <!-- Leaflet CSS for map styling -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzxH+iPntuTKZSaXhVuGZ1km4z="
+          crossorigin=""/>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif; /* Using Inter font */
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f4f8; /* Light background */
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+        #map {
+            height: 600px; /* Fixed height for the map */
+            width: 90%; /* Responsive width */
+            max-width: 900px; /* Max width for larger screens */
+            border-radius: 12px; /* Rounded corners */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            margin-bottom: 30px;
+            background-color: #e0e6ed; /* Map background */
+        }
+        .legend {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            line-height: 24px;
+            font-size: 1em;
+            margin-top: 20px;
+            max-width: 300px;
+            width: 80%;
+            text-align: left;
+        }
+        .legend i {
+            width: 20px;
+            height: 20px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.8;
+            border-radius: 4px;
+        }
+        .info {
+            padding: 6px 8px;
+            font: 14px/16px Arial, Helvetica, sans-serif;
+            background: white;
+            background: rgba(255,255,255,0.9);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px;
+            text-align: center;
+        }
+        .info h4 {
+            margin: 0 0 5px;
+            color: #777;
+            font-size: 1.1em;
+        }
+        .status-message {
+            margin-top: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #555;
+            text-align: center;
+        }
+        .disclaimer {
+            font-size: 0.9em;
+            color: #777;
+            margin-top: 20px;
+            text-align: center;
+            max-width: 800px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+            #map {
+                height: 400px;
+                width: 95%;
+            }
+            .legend {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>UK Postcode Coverage Map</h1>
+    <div id="map"></div>
+    <div class="legend">
+        <h4>Coverage Status</h4>
+        <div><i style="background:#4CAF50;"></i> Covered</div>
+        <div><i style="background:#FFC107;"></i> Not Covered</div>
+    </div>
+    <div class="status-message" id="coverageSummary"></div>
+    <div class="disclaimer">
+        <p>
+            **Disclaimer:** This map uses conceptual and simplified geographical shapes for postcode areas. It does not represent exact, official boundaries but serves as a visual aid to demonstrate coverage based on your provided postcode list. Islands accessible by road are considered mainland.
+        </p>
+    </div>
+
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/4K6pQBRlHR+A6btADFGa="
+            crossorigin=""></script>
+    <script>
+        // Ensure the DOM is fully loaded before running Leaflet code
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- 1. Your Provided Mainland Postcode Data ---
+            // This array contains the unique postcode areas (e.g., 'BD', 'HG') extracted from your CSV
+            // after filtering out non-road accessible islands.
+            const coveredPostcodeAreas = [
+                'BD', 'HG', 'PR', 'BB', 'L', 'WN', 'BL', 'OL', 'HX', 'HD', 'WF', 'DN', 'CH', 'CW', 'WA',
+                'M', 'SK', 'S', 'DE', 'NG', 'LS', 'FY', 'OX'
+            ];
+
+            // --- 2. Simulated GeoJSON Data for UK Postcode Areas ---
+            // This is a highly simplified representation of UK postcode areas for visualization.
+            // It does NOT represent accurate geographical boundaries.
+            // Each polygon is a rough rectangle for illustrative purposes.
+            const ukPostcodeAreasGeoJSON = {
+                "type": "FeatureCollection",
+                "features": [
+                    // Scotland
+                    { "type": "Feature", "properties": { "name": "AB" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.5, 57.0], [-1.5, 57.0], [-1.5, 57.5], [-2.5, 57.5], [-2.5, 57.0]]] } },
+                    { "type": "Feature", "properties": { "name": "DD" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.0, 56.4], [-2.5, 56.4], [-2.5, 56.8], [-3.0, 56.8], [-3.0, 56.4]]] } },
+                    { "type": "Feature", "properties": { "name": "EH" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.5, 55.8], [-2.8, 55.8], [-2.8, 56.2], [-3.5, 56.2], [-3.5, 55.8]]] } },
+                    { "type": "Feature", "properties": { "name": "G" }, "geometry": { "type": "Polygon", "coordinates": [[[-4.8, 55.7], [-4.0, 55.7], [-4.0, 56.0], [-4.8, 56.0], [-4.8, 55.7]]] } },
+                    { "type": "Feature", "properties": { "name": "HS" }, "geometry": { "type": "Polygon", "coordinates": [[[-7.5, 57.5], [-6.5, 57.5], [-6.5, 58.5], [-7.5, 58.5], [-7.5, 57.5]]] } }, // Outer Hebrides (Excluded)
+                    { "type": "Feature", "properties": { "name": "IV" }, "geometry": { "type": "Polygon", "coordinates": [[[-5.5, 57.0], [-3.5, 57.0], [-3.5, 58.5], [-5.5, 58.5], [-5.5, 57.0]]] } },
+                    { "type": "Feature", "properties": { "name": "KW" }, "geometry": { "type": "Polygon", "coordinates": [[[-4.0, 58.5], [-2.5, 58.5], [-2.5, 59.5], [-4.0, 59.5], [-4.0, 58.5]]] } }, // Includes some islands (Excluded districts KW15-17)
+                    { "type": "Feature", "properties": { "name": "PA" }, "geometry": { "type": "Polygon", "coordinates": [[[-5.5, 55.5], [-4.5, 55.5], [-4.5, 56.5], [-5.5, 56.5], [-5.5, 55.5]]] } }, // Includes some islands (Excluded districts PA20-78)
+                    { "type": "Feature", "properties": { "name": "PH" }, "geometry": { "type": "Polygon", "coordinates": [[[-4.5, 56.0], [-3.0, 56.0], [-3.0, 57.0], [-4.5, 57.0], [-4.5, 56.0]]] } }, // Includes some islands (Excluded districts PH41-44)
+                    { "type": "Feature", "properties": { "name": "ZE" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.8, 60.0], [-0.8, 60.0], [-0.8, 60.8], [-1.8, 60.8], [-1.8, 60.0]]] } }, // Shetland (Excluded)
+
+                    // Northern Ireland
+                    { "type": "Feature", "properties": { "name": "BT" }, "geometry": { "type": "Polygon", "coordinates": [[[-7.5, 54.0], [-5.5, 54.0], [-5.5, 55.5], [-7.5, 55.5], [-7.5, 54.0]]] } },
+
+                    // Wales
+                    { "type": "Feature", "properties": { "name": "CF" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.5, 51.3], [-3.0, 51.3], [-3.0, 51.7], [-3.5, 51.7], [-3.5, 51.3]]] } },
+                    { "type": "Feature", "properties": { "name": "LL" }, "geometry": { "type": "Polygon", "coordinates": [[[-4.5, 53.0], [-3.5, 53.0], [-3.5, 53.5], [-4.5, 53.5], [-4.5, 53.0]]] } },
+                    { "type": "Feature", "properties": { "name": "SA" }, "geometry": { "type": "Polygon", "coordinates": [[[-5.0, 51.5], [-4.0, 51.5], [-4.0, 52.5], [-5.0, 52.5], [-5.0, 51.5]]] } },
+                    
+                    // England - North West
+                    { "type": "Feature", "properties": { "name": "BB" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.8, 53.6], [-2.2, 53.6], [-2.2, 53.9], [-2.8, 53.9], [-2.8, 53.6]]] } },
+                    { "type": "Feature", "properties": { "name": "BL" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.7, 53.5], [-2.2, 53.5], [-2.2, 53.7], [-2.7, 53.7], [-2.7, 53.5]]] } },
+                    { "type": "Feature", "properties": { "name": "CH" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.3, 53.0], [-2.8, 53.0], [-2.8, 53.3], [-3.3, 53.3], [-3.3, 53.0]]] } },
+                    { "type": "Feature", "properties": { "name": "CW" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.7, 53.0], [-2.2, 53.0], [-2.2, 53.3], [-2.7, 53.3], [-2.7, 53.0]]] } },
+                    { "type": "Feature", "properties": { "name": "FY" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.1, 53.7], [-2.7, 53.7], [-2.7, 53.9], [-3.1, 53.9], [-3.1, 53.7]]] } },
+                    { "type": "Feature", "properties": { "name": "L" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.0, 53.3], [-2.8, 53.3], [-2.8, 53.5], [-3.0, 53.5], [-3.0, 53.3]]] } },
+                    { "type": "Feature", "properties": { "name": "M" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.3, 53.4], [-2.1, 53.4], [-2.1, 53.6], [-2.3, 53.6], [-2.3, 53.4]]] } },
+                    { "type": "Feature", "properties": { "name": "OL" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.3, 53.5], [-1.9, 53.5], [-1.9, 53.8], [-2.3, 53.8], [-2.3, 53.5]]] } },
+                    { "type": "Feature", "properties": { "name": "PR" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.9, 53.7], [-2.5, 53.7], [-2.5, 54.0], [-2.9, 54.0], [-2.9, 53.7]]] } },
+                    { "type": "Feature", "properties": { "name": "SK" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.2, 53.2], [-1.8, 53.2], [-1.8, 53.5], [-2.2, 53.5], [-2.2, 53.2]]] } },
+                    { "type": "Feature", "properties": { "name": "WA" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.8, 53.2], [-2.4, 53.2], [-2.4, 53.4], [-2.8, 53.4], [-2.8, 53.2]]] } },
+                    { "type": "Feature", "properties": { "name": "WN" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.7, 53.4], [-2.3, 53.4], [-2.3, 53.6], [-2.7, 53.6], [-2.7, 53.4]]] } },
+
+                    // England - North East
+                    { "type": "Feature", "properties": { "name": "BD" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.9, 53.7], [-1.5, 53.7], [-1.5, 54.0], [-1.9, 54.0], [-1.9, 53.7]]] } },
+                    { "type": "Feature", "properties": { "name": "DN" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.4, 53.4], [-0.9, 53.4], [-0.9, 53.8], [-1.4, 53.8], [-1.4, 53.4]]] } },
+                    { "type": "Feature", "properties": { "name": "HD" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.9, 53.5], [-1.6, 53.5], [-1.6, 53.7], [-1.9, 53.7], [-1.9, 53.5]]] } },
+                    { "type": "Feature", "properties": { "name": "HG" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.6, 53.9], [-1.3, 53.9], [-1.3, 54.2], [-1.6, 54.2], [-1.6, 53.9]]] } },
+                    { "type": "Feature", "properties": { "name": "HX" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.9, 53.6], [-1.6, 53.6], [-1.6, 53.8], [-1.9, 53.8], [-1.9, 53.6]]] } },
+                    { "type": "Feature", "properties": { "name": "LS" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.8, 53.7], [-1.4, 53.7], [-1.4, 54.0], [-1.8, 54.0], [-1.8, 53.7]]] } },
+                    { "type": "Feature", "properties": { "name": "NE" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.8, 54.8], [-1.2, 54.8], [-1.2, 55.2], [-1.8, 55.2], [-1.8, 54.8]]] } },
+                    { "type": "Feature", "properties": { "name": "S" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.6, 53.2], [-1.2, 53.2], [-1.2, 53.6], [-1.6, 53.6], [-1.6, 53.2]]] } },
+                    { "type": "Feature", "properties": { "name": "WF" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.6, 53.5], [-1.2, 53.5], [-1.2, 53.8], [-1.6, 53.8], [-1.6, 53.5]]] } },
+                    { "type": "Feature", "properties": { "name": "YO" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.3, 53.8], [-0.8, 53.8], [-0.8, 54.3], [-1.3, 54.3], [-1.3, 53.8]]] } },
+
+                    // England - Midlands
+                    { "type": "Feature", "properties": { "name": "B" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.0, 52.4], [-1.8, 52.4], [-1.8, 52.6], [-2.0, 52.6], [-2.0, 52.4]]] } },
+                    { "type": "Feature", "properties": { "name": "CV" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.6, 52.3], [-1.4, 52.3], [-1.4, 52.5], [-1.6, 52.5], [-1.6, 52.3]]] } },
+                    { "type": "Feature", "properties": { "name": "DE" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.6, 52.8], [-1.2, 52.8], [-1.2, 53.1], [-1.6, 53.1], [-1.6, 52.8]]] } },
+                    { "type": "Feature", "properties": { "name": "NG" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.3, 52.8], [-0.9, 52.8], [-0.9, 53.2], [-1.3, 53.2], [-1.3, 52.8]]] } },
+
+                    // England - South West
+                    { "type": "Feature", "properties": { "name": "BS" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.8, 51.4], [-2.4, 51.4], [-2.4, 51.6], [-2.8, 51.6], [-2.8, 51.4]]] } },
+                    { "type": "Feature", "properties": { "name": "EX" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.6, 50.6], [-3.4, 50.6], [-3.4, 50.9], [-3.6, 50.9], [-3.6, 50.6]]] } },
+                    { "type": "Feature", "properties": { "name": "PL" }, "geometry": { "type": "Polygon", "coordinates": [[[-4.3, 50.3], [-4.0, 50.3], [-4.0, 50.6], [-4.3, 50.6], [-4.3, 50.3]]] } },
+                    { "type": "Feature", "properties": { "name": "TR" }, "geometry": { "type": "Polygon", "coordinates": [[[-5.2, 50.0], [-4.8, 50.0], [-4.8, 50.4], [-5.2, 50.4], [-5.2, 50.0]]] } }, // Includes Isles of Scilly (Excluded districts TR21-25)
+
+                    // England - South East
+                    { "type": "Feature", "properties": { "name": "BN" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.3, 50.7], [0.1, 50.7], [0.1, 51.0], [-0.3, 51.0], [-0.3, 50.7]]] } },
+                    { "type": "Feature", "properties": { "name": "OX" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.5, 51.6], [-1.0, 51.6], [-1.0, 51.9], [-1.5, 51.9], [-1.5, 51.6]]] } },
+                    { "type": "Feature", "properties": { "name": "PO" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.2, 50.7], [-0.8, 50.7], [-0.8, 51.0], [-1.2, 51.0], [-1.2, 50.7]]] } }, // Includes Isle of Wight (Excluded districts PO30-41)
+                    { "type": "Feature", "properties": { "name": "SO" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.6, 50.8], [-1.2, 50.8], [-1.2, 51.1], [-1.6, 51.1], [-1.6, 50.8]]] } },
+
+                    // London (simplified as central blocks)
+                    { "type": "Feature", "properties": { "name": "E" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.05, 51.5], [0.1, 51.5], [0.1, 51.6], [-0.05, 51.6], [-0.05, 51.5]]] } },
+                    { "type": "Feature", "properties": { "name": "EC" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.1, 51.5], [-0.05, 51.5], [-0.05, 51.55], [-0.1, 51.55], [-0.1, 51.5]]] } },
+                    { "type": "Feature", "properties": { "name": "N" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.15, 51.55], [0.0, 51.55], [0.0, 51.65], [-0.15, 51.65], [-0.15, 51.55]]] } },
+                    { "type": "Feature", "properties": { "name": "NW" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.25, 51.55], [-0.1, 51.55], [-0.1, 51.65], [-0.25, 51.65], [-0.25, 51.55]]] } },
+                    { "type": "Feature", "properties": { "name": "SE" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.1, 51.4], [0.1, 51.4], [0.1, 51.5], [-0.1, 51.5], [-0.1, 51.4]]] } },
+                    { "type": "Feature", "properties": { "name": "SW" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.2, 51.4], [-0.05, 51.4], [-0.05, 51.5], [-0.2, 51.5], [-0.2, 51.4]]] } },
+                    { "type": "Feature", "properties": { "name": "W" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.2, 51.5], [-0.05, 51.5], [-0.05, 51.55], [-0.2, 51.55], [-0.2, 51.5]]] } },
+                    { "type": "Feature", "properties": { "name": "WC" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.15, 51.5], [-0.1, 51.5], [-0.1, 51.55], [-0.15, 51.55], [-0.15, 51.5]]] } },
+
+                    // Crown Dependencies (Excluded)
+                    { "type": "Feature", "properties": { "name": "GY" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.6, 49.4], [-2.5, 49.4], [-2.5, 49.5], [-2.6, 49.5], [-2.6, 49.4]]] } },
+                    { "type": "Feature", "properties": { "name": "IM" }, "geometry": { "type": "Polygon", "coordinates": [[[-4.7, 54.0], [-4.4, 54.0], [-4.4, 54.3], [-4.7, 54.3], [-4.7, 54.0]]] } },
+                    { "type": "Feature", "properties": { "name": "JE" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.2, 49.1], [-2.0, 49.1], [-2.0, 49.2], [-2.2, 49.2], [-2.2, 49.1]]] } }
+                ]
+            };
+
+            // --- 3. Map Initialization ---
+            const map = L.map('map').setView([54.0, -2.0], 5); // Centered on UK
+
+            // Add a tile layer (OpenStreetMap)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+            }).addTo(map);
+
+            // --- 4. Styling and Interactivity Functions ---
+            function getStyle(feature) {
+                const postcodeArea = feature.properties.name;
+                const isCovered = coveredPostcodeAreas.includes(postcodeArea);
+                const isExcludedIsland = ['GY', 'IM', 'JE', 'HS', 'ZE'].includes(postcodeArea) ||
+                                         ['KW', 'PA', 'PH', 'PO', 'TR', 'KA'].some(prefix => postcodeArea.startsWith(prefix) && (
+                                             (prefix === 'KW' && ['KW15','KW16','KW17'].some(d => postcodeArea.includes(d))) ||
+                                             (prefix === 'PA' && (parseInt(postcodeArea.substring(2)) >= 20 && parseInt(postcodeArea.substring(2)) <= 78)) ||
+                                             (prefix === 'PH' && (parseInt(postcodeArea.substring(2)) >= 41 && parseInt(postcodeArea.substring(2)) <= 44)) ||
+                                             (prefix === 'PO' && (parseInt(postcodeArea.substring(2)) >= 30 && parseInt(postcodeArea.substring(2)) <= 41)) ||
+                                             (prefix === 'TR' && (parseInt(postcodeArea.substring(2)) >= 21 && parseInt(postcodeArea.substring(2)) <= 25)) ||
+                                             (prefix === 'KA' && ['KA27','KA28'].some(d => postcodeArea.includes(d)))
+                                         ));
+
+                let fillColor;
+                if (isExcludedIsland) {
+                    fillColor = '#CCCCCC'; // Grey for explicitly excluded islands
+                } else if (isCovered) {
+                    fillColor = '#4CAF50'; // Green for covered mainland/road-accessible
+                } else {
+                    fillColor = '#FFC107'; // Amber for not covered mainland/road-accessible
+                }
+
+                return {
+                    fillColor: fillColor,
+                    weight: 1,
+                    opacity: 1,
+                    color: 'white',
+                    dashArray: '3',
+                    fillOpacity: 0.7
+                };
+            }
+
+            function onEachFeature(feature, layer) {
+                const postcodeArea = feature.properties.name;
+                const isCovered = coveredPostcodeAreas.includes(postcodeArea);
+                const isExcludedIsland = ['GY', 'IM', 'JE', 'HS', 'ZE'].includes(postcodeArea) ||
+                                         ['KW', 'PA', 'PH', 'PO', 'TR', 'KA'].some(prefix => postcodeArea.startsWith(prefix) && (
+                                             (prefix === 'KW' && ['KW15','KW16','KW17'].some(d => postcodeArea.includes(d))) ||
+                                             (prefix === 'PA' && (parseInt(postcodeArea.substring(2)) >= 20 && parseInt(postcodeArea.substring(2)) <= 78)) ||
+                                             (prefix === 'PH' && (parseInt(postcodeArea.substring(2)) >= 41 && parseInt(postcodeArea.substring(2)) <= 44)) ||
+                                             (prefix === 'PO' && (parseInt(postcodeArea.substring(2)) >= 30 && parseInt(postcodeArea.substring(2)) <= 41)) ||
+                                             (prefix === 'TR' && (parseInt(postcodeArea.substring(2)) >= 21 && parseInt(postcodeArea.substring(2)) <= 25)) ||
+                                             (prefix === 'KA' && ['KA27','KA28'].some(d => postcodeArea.includes(d)))
+                                         ));
+
+                let statusText;
+                if (isExcludedIsland) {
+                    statusText = "Excluded (Island)";
+                } else if (isCovered) {
+                    statusText = "Covered";
+                } else {
+                    statusText = "Not Covered";
+                }
+
+                layer.bindPopup(`<h4>${postcodeArea}</h4><b>Status:</b> ${statusText}`);
+
+                layer.on({
+                    mouseover: function(e) {
+                        var layer = e.target;
+                        layer.setStyle({
+                            weight: 3,
+                            color: '#666',
+                            dashArray: '',
+                            fillOpacity: 0.9
+                        });
+                        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                            layer.bringToFront();
+                        }
+                    },
+                    mouseout: function(e) {
+                        geojsonLayer.resetStyle(e.target);
+                    }
+                });
+            }
+
+            // Add GeoJSON layer to map
+            const geojsonLayer = L.geoJson(ukPostcodeAreasGeoJSON, {
+                style: getStyle,
+                onEachFeature: onEachFeature
+            }).addTo(map);
+
+            // --- 5. Calculate and Display Summary ---
+            let totalAreas = ukPostcodeAreasGeoJSON.features.length;
+            let coveredCount = 0;
+            let notCoveredCount = 0;
+            let excludedIslandCount = 0;
+
+            ukPostcodeAreasGeoJSON.features.forEach(feature => {
+                const postcodeArea = feature.properties.name;
+                const isCovered = coveredPostcodeAreas.includes(postcodeArea);
+                const isExcludedIsland = ['GY', 'IM', 'JE', 'HS', 'ZE'].includes(postcodeArea) ||
+                                         ['KW', 'PA', 'PH', 'PO', 'TR', 'KA'].some(prefix => postcodeArea.startsWith(prefix) && (
+                                             (prefix === 'KW' && ['KW15','KW16','KW17'].some(d => postcodeArea.includes(d))) ||
+                                             (prefix === 'PA' && (parseInt(postcodeArea.substring(2)) >= 20 && parseInt(postcodeArea.substring(2)) <= 78)) ||
+                                             (prefix === 'PH' && (parseInt(postcodeArea.substring(2)) >= 41 && parseInt(postcodeArea.substring(2)) <= 44)) ||
+                                             (prefix === 'PO' && (parseInt(postcodeArea.substring(2)) >= 30 && parseInt(postcodeArea.substring(2)) <= 41)) ||
+                                             (prefix === 'TR' && (parseInt(postcodeArea.substring(2)) >= 21 && parseInt(postcodeArea.substring(2)) <= 25)) ||
+                                             (prefix === 'KA' && ['KA27','KA28'].some(d => postcodeArea.includes(d)))
+                                         ));
+
+                if (isExcludedIsland) {
+                    excludedIslandCount++;
+                } else if (isCovered) {
+                    coveredCount++;
+                } else {
+                    notCoveredCount++;
+                }
+            });
+
+            const mainlandAndRoadAccessibleTotal = totalAreas - excludedIslandCount;
+            const proportionCoveredMainland = (coveredCount / mainlandAndRoadAccessibleTotal) * 100;
+
+            document.getElementById('coverageSummary').innerHTML = `
+                Mainland & Road-Accessible Areas: ${mainlandAndRoadAccessibleTotal}<br>
+                Areas Covered: ${coveredCount}<br>
+                Areas Not Covered: ${notCoveredCount}<br>
+                Proportion of Mainland & Road-Accessible Areas Covered: <strong>${proportionCoveredMainland.toFixed(2)}%</strong>
+            `;
+        }); // End of DOMContentLoaded
+    </script>
+</body>
+</html>
