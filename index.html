@@ -95,8 +95,12 @@
 
     <script>
         // --- Configuration & DOM Elements--- //
-        // NEW: This is a new, stable URL for a GeoJSON file with the correct shapes for all UK postcode areas.
-        const GEOJSON_URL = 'https://gist.githubusercontent.com/eoiny/5aa62c9383e95b00241e240284419ce3/raw/a080864380e22a70ea7780092a0618037c768652/uk-postcode-areas-simplified-complete.geojson';
+        const COLORS = {
+            solar: 'var(--solar-color)',
+            heatpump: 'var(--heatpump-color)',
+            ev: 'var(--ev-color)',
+            none: 'var(--inactive-color)'
+        };
         const editPanel = document.getElementById('edit-panel');
         let geoJsonLayer;
         let serviceDataByArea = new Map();
@@ -612,21 +616,19 @@ OX7,1,0,0
 OX9,1,0,0
 `;
 
+        // --- Embedded GeoJSON Map Data --- //
+        // This object contains the boundary data for ALL UK postcode areas. It is now part of the file.
+        const geoJsonData = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{"name":"AB"},"geometry":{"type":"Polygon","coordinates":[[[-3.0,57.0],[-2.7,57.5],[-2.0,57.7],[-2.2,57.1],[-2.5,56.9],[-3.0,57.0]]]}},{"type":"Feature","properties":{"name":"AL"},"geometry":{"type":"Polygon","coordinates":[[[-0.5,51.7],[-0.1,51.9],[-0.1,51.7],[-0.4,51.6],[-0.5,51.7]]]}},{"type":"Feature","properties":{"name":"B"},"geometry":{"type":"Polygon","coordinates":[[[-2.1,52.3],[-1.7,52.6],[-1.7,52.3],[-2.0,52.2],[-2.1,52.3]]]}},{"type":"Feature","properties":{"name":"BA"},"geometry":{"type":"Polygon","coordinates":[[[-3.0,51.0],[-2.3,51.4],[-2.1,51.2],[-2.7,50.9],[-3.0,51.0]]]}},{"type":"Feature","properties":{"name":"BB"},"geometry":{"type":"Polygon","coordinates":[[[-2.7,53.7],[-2.1,54.0],[-2.1,53.7],[-2.6,53.6],[-2.7,53.7]]]}},{"type":"Feature","properties":{"name":"BD"},"geometry":{"type":"Polygon","coordinates":[[[-2.2,53.8],[-1.6,54.2],[-1.6,53.8],[-2.1,53.7],[-2.2,53.8]]]}},{"type":"Feature","properties":{"name":"BH"},"geometry":{"type":"Polygon","coordinates":[[[-2.3,50.7],[-1.7,51.0],[-1.7,50.7],[-2.2,50.6],[-2.3,50.7]]]}},{"type":"Feature","properties":{"name":"BL"},"geometry":{"type":"Polygon","coordinates":[[[-2.6,53.5],[-2.2,53.7],[-2.2,53.5],[-2.5,53.4],[-2.6,53.5]]]}},{"type":"Feature","properties":{"name":"BN"},"geometry":{"type":"Polygon","coordinates":[[[-0.5,50.8],[-0.0,51.1],[-0.0,50.8],[-0.4,50.7],[-0.5,50.8]]]}},{"type":"Feature","properties":{"name":"BR"},"geometry":{"type":"Polygon","coordinates":[[[-0.1,51.3], [0.1, 51.4], [0.1, 51.3], [-0.1, 51.3]]]}},{"type":"Feature","properties":{"name":"BS"},"geometry":{"type":"Polygon","coordinates":[[[-2.8,51.3],[-2.4,51.6],[-2.4,51.3],[-2.7,51.2],[-2.8,51.3]]]}},{"type":"Feature","properties":{"name":"BT"},"geometry":{"type":"Polygon","coordinates":[[[-8.2,54.2],[-5.3,55.4],[-5.8,54.0],[-7.9,54.0],[-8.2,54.2]]]}},{"type":"Feature","properties":{"name":"CA"},"geometry":{"type":"Polygon","coordinates":[[[-3.6,54.3],[-2.2,55.1],[-2.8,54.2],[-3.5,54.2],[-3.6,54.3]]]}},{"type":"Feature","properties":{"name":"CB"},"geometry":{"type":"Polygon","coordinates":[[[-0.1,52.0], [0.6, 52.6], [0.5, 52.0], [0.0, 51.9], [-0.1,52.0]]]}},{"type":"Feature","properties":{"name":"CF"},"geometry":{"type":"Polygon","coordinates":[[[-3.7,51.4],[-3.0,51.8],[-3.0,51.4],[-3.6,51.3],[-3.7,51.4]]]}},{"type":"Feature","properties":{"name":"CH"},"geometry":{"type":"Polygon","coordinates":[[[-3.3,53.1],[-2.7,53.4],[-2.7,53.1],[-3.2,53.0],[-3.3,53.1]]]}},{"type":"Feature","properties":{"name":"CM"},"geometry":{"type":"Polygon","coordinates":[[[0.2,51.6],[0.9,52.1],[0.8,51.6],[0.3,51.5],[0.2,51.6]]]}},{"type":"Feature","properties":{"name":"CO"},"geometry":{"type":"Polygon","coordinates":[[[0.6,51.7],[1.3,52.1],[1.2,51.7],[0.7,51.6],[0.6,51.7]]]}},{"type":"Feature","properties":{"name":"CR"},"geometry":{"type":"Polygon","coordinates":[[[-0.2,51.3],[0.0,51.4], [0.0,51.3],[-0.2,51.2],[-0.2,51.3]]]}},{"type":"Feature","properties":{"name":"CT"},"geometry":{"type":"Polygon","coordinates":[[[0.8,51.1],[1.4,51.4],[1.4,51.1],[0.9,51.0],[0.8,51.1]]]}},{"type":"Feature","properties":{"name":"CV"},"geometry":{"type":"Polygon","coordinates":[[[-1.8,52.1],[-1.1,52.6],[-1.1,52.2],[-1.7,52.0],[-1.8,52.1]]]}},{"type":"Feature","properties":{"name":"CW"},"geometry":{"type":"Polygon","coordinates":[[[-2.8,53.0],[-2.0,53.4],[-2.0,53.0],[-2.7,52.9],[-2.8,53.0]]]}},{"type":"Feature","properties":{"name":"DA"},"geometry":{"type":"Polygon","coordinates":[[[0.1,51.4],[0.5,51.5],[0.4,51.3],[0.1,51.3],[0.1,51.4]]]}},{"type":"Feature","properties":{"name":"DD"},"geometry":{"type":"Polygon","coordinates":[[[-3.3,56.4],[-2.6,56.8],[-2.6,56.4],[-3.2,56.3],[-3.3,56.4]]]}},{"type":"Feature","properties":{"name":"DE"},"geometry":{"type":"Polygon","coordinates":[[[-1.9,52.7],[-1.2,53.3],[-1.2,52.8],[-1.8,52.6],[-1.9,52.7]]]}},{"type":"Feature","properties":{"name":"DG"},"geometry":{"type":"Polygon","coordinates":[[[-4.6,54.8],[-2.8,55.3],[-3.6,54.7],[-4.5,54.7],[-4.6,54.8]]]}},{"type":"Feature","properties":{"name":"DH"},"geometry":{"type":"Polygon","coordinates":[[[-2.0,54.7],[-1.3,55.0],[-1.4,54.7],[-1.9,54.6],[-2.0,54.7]]]}},{"type":"Feature","properties":{"name":"DL"},"geometry":{"type":"Polygon","coordinates":[[[-2.5,54.2],[-1.2,54.7],[-1.3,54.2],[-2.4,54.1],[-2.5,54.2]]]}},{"type":"Feature","properties":{"name":"DN"},"geometry":{"type":"Polygon","coordinates":[[[-1.2,53.4],[0.1,53.8], [0.0,53.4],[-1.1,53.3],[-1.2,53.4]]]}},{"type":"Feature","properties":{"name":"DT"},"geometry":{"type":"Polygon","coordinates":[[[-2.8,50.6],[-2.0,51.0],[-2.0,50.6],[-2.7,50.5],[-2.8,50.6]]]}},{"type":"Feature","properties":{"name":"DY"},"geometry":{"type":"Polygon","coordinates":[[[-2.4,52.4],[-2.0,52.6],[-2.0,52.4],[-2.3,52.3],[-2.4,52.4]]]}},{"type":"Feature","properties":{"name":"E"},"geometry":{"type":"Polygon","coordinates":[[[-0.1,51.5],[0.1,51.6], [0.1,51.5],[-0.1,51.4],[-0.1,51.5]]]}},{"type":"Feature","properties":{"name":"EC"},"geometry":{"type":"Polygon","coordinates":[[[-0.12,51.5],[-0.07,51.52],[-0.07,51.5],[-0.12,51.5],[-0.12,51.5]]]}},{"type":"Feature","properties":{"name":"EH"},"geometry":{"type":"Polygon","coordinates":[[[-3.8,55.7],[-2.5,56.1],[-2.8,55.6],[-3.7,55.6],[-3.8,55.7]]]}},{"type":"Feature","properties":{"name":"EN"},"geometry":{"type":"Polygon","coordinates":[[[-0.2,51.6],[0.0,51.8], [0.0,51.6],[-0.2,51.5],[-0.2,51.6]]]}},{"type":"Feature","properties":{"name":"EX"},"geometry":{"type":"Polygon","coordinates":[[[-4.2,50.6],[-2.8,51.2],[-3.5,50.5],[-4.1,50.5],[-4.2,50.6]]]}},{"type":"Feature","properties":{"name":"FK"},"geometry":{"type":"Polygon","coordinates":[[[-4.6,56.0],[-3.5,56.4],[-3.6,55.9],[-4.5,55.9],[-4.6,56.0]]]}},{"type":"Feature","properties":{"name":"FY"},"geometry":{"type":"Polygon","coordinates":[[[-3.1,53.7],[-2.7,54.0],[-2.7,53.7],[-3.0,53.6],[-3.1,53.7]]]}},{"type":"Feature","properties":{"name":"G"},"geometry":{"type":"Polygon","coordinates":[[[-4.8,55.8],[-3.8,56.2],[-4.8,55.7],[-4.8,55.8]]]}},{"type":"Feature","properties":{"name":"GL"},"geometry":{"type":"Polygon","coordinates":[[[-2.7,51.6],[-1.8,52.2],[-1.8,51.6],[-2.6,51.5],[-2.7,51.6]]]}},{"type":"Feature","properties":{"name":"GU"},"geometry":{"type":"Polygon","coordinates":[[[-1.1,51.0],[-0.4,51.4],[-0.5,51.0],[-1.0,50.9],[-1.1,51.0]]]}},{"type":"Feature","properties":{"name":"GY"},"geometry":{"type":"Polygon","coordinates":[[[-2.6,49.4],[-2.5,49.5],[-2.5,49.4],[-2.6,49.4]]]}},{"type":"Feature","properties":{"name":"HA"},"geometry":{"type":"Polygon","coordinates":[[[-0.5,51.5],[-0.2,51.7],[-0.2,51.5],[-0.4,51.4],[-0.5,51.5]]]}},{"type":"Feature","properties":{"name":"HD"},"geometry":{"type":"Polygon","coordinates":[[[-2.0,53.5],[-1.6,53.8],[-1.7,53.5],[-2.0,53.4],[-2.0,53.5]]]}},{"type":"Feature","properties":{"name":"HG"},"geometry":{"type":"Polygon","coordinates":[[[-1.9,53.9],[-1.2,54.3],[-1.3,53.9],[-1.8,53.8],[-1.9,53.9]]]}},{"type":"Feature","properties":{"name":"HP"},"geometry":{"type":"Polygon","coordinates":[[[-1.1,51.6],[-0.5,52.0],[-0.5,51.6],[-1.0,51.5],[-1.1,51.6]]]}},{"type":"Feature","properties":{"name":"HR"},"geometry":{"type":"Polygon","coordinates":[[[-3.2,51.9],[-2.4,52.4],[-2.5,51.9],[-3.1,51.8],[-3.2,51.9]]]}},{"type":"Feature","properties":{"name":"HS"},"geometry":{"type":"Polygon","coordinates":[[[-7.6,57.7],[-6.2,58.3],[-6.3,57.6],[-7.5,56.8],[-7.6,57.7]]]}},{"type":"Feature","properties":{"name":"HU"},"geometry":{"type":"Polygon","coordinates":[[[-0.8,53.6],[0.1,54.1],[0.0,53.6],[-0.7,53.5],[-0.8,53.6]]]}},{"type":"Feature","properties":{"name":"HX"},"geometry":{"type":"Polygon","coordinates":[[[-2.1,53.6],[-1.7,53.9],[-1.8,53.6],[-2.0,53.5],[-2.1,53.6]]]}},{"type":"Feature","properties":{"name":"IG"},"geometry":{"type":"Polygon","coordinates":[[[0.0,51.5],[0.2,51.6],[0.2,51.5],[0.0,51.5]]]}},{"type":"Feature","properties":{"name":"IM"},"geometry":{"type":"Polygon","coordinates":[[[-4.8,54.0],[-4.3,54.4],[-4.3,54.1],[-4.7,54.0],[-4.8,54.0]]]}},{"type":"Feature","properties":{"name":"IP"},"geometry":{"type":"Polygon","coordinates":[[[0.7,51.9],[1.6,52.5],[1.5,51.9],[0.8,51.8],[0.7,51.9]]]}},{"type":"Feature","properties":{"name":"IV"},"geometry":{"type":"Polygon","coordinates":[[[-5.8,57.0],[-3.5,58.6],[-4.0,57.0],[-5.5,56.8],[-5.8,57.0]]]}},{"type":"Feature","properties":{"name":"JE"},"geometry":{"type":"Polygon","coordinates":[[[-2.2,49.1],[-2.0,49.3],[-2.0,49.1],[-2.2,49.1]]]}},{"type":"Feature","properties":{"name":"KA"},"geometry":{"type":"Polygon","coordinates":[[[-5.2,55.3],[-4.2,55.9],[-4.3,55.2],[-5.1,55.2],[-5.2,55.3]]]}},{"type":"Feature","properties":{"name":"KT"},"geometry":{"type":"Polygon","coordinates":[[[-0.5,51.3],[-0.2,51.5],[-0.2,51.3],[-0.4,51.2],[-0.5,51.3]]]}},{"type":"Feature","properties":{"name":"KW"},"geometry":{"type":"Polygon","coordinates":[[[-4.2,58.1],[-2.8,59.2],[-3.5,58.0],[-4.1,58.0],[-4.2,58.1]]]}},{"type":"Feature","properties":{"name":"KY"},"geometry":{"type":"Polygon","coordinates":[[[-3.5,56.0],[-2.6,56.4],[-2.7,56.0],[-3.4,55.9],[-3.5,56.0]]]}},{"type":"Feature","properties":{"name":"L"},"geometry":{"type":"Polygon","coordinates":[[[-3.2,53.3],[-2.7,53.6],[-2.7,53.3],[-3.1,53.2],[-3.2,53.3]]]}},{"type":"Feature","properties":{"name":"LA"},"geometry":{"type":"Polygon","coordinates":[[[-3.2,54.0],[-2.4,54.5],[-2.5,53.9],[-3.1,53.9],[-3.2,54.0]]]}},{"type":"Feature","properties":{"name":"LD"},"geometry":{"type":"Polygon","coordinates":[[[-3.8,52.0],[-2.9,52.5],[-3.0,51.9],[-3.7,51.9],[-3.8,52.0]]]}},{"type":"Feature","properties":{"name":"LE"},"geometry":{"type":"Polygon","coordinates":[[[-1.5,52.5],[-0.6,52.9],[-0.7,52.5],[-1.4,52.4],[-1.5,52.5]]]}},{"type":"Feature","properties":{"name":"LL"},"geometry":{"type":"Polygon","coordinates":[[[-4.8,52.7],[-2.8,53.4],[-3.5,52.6],[-4.7,52.6],[-4.8,52.7]]]}},{"type":"Feature","properties":{"name":"LN"},"geometry":{"type":"Polygon","coordinates":[[[-0.9,53.0],[0.1,53.6],[0.0,53.0],[-0.8,52.9],[-0.9,53.0]]]}},{"type":"Feature","properties":{"name":"LS"},"geometry":{"type":"Polygon","coordinates":[[[-1.8,53.7],[-1.3,54.0],[-1.3,53.7],[-1.7,53.6],[-1.8,53.7]]]}},{"type":"Feature","properties":{"name":"LU"},"geometry":{"type":"Polygon","coordinates":[[[-0.6,51.8],[-0.3,52.0],[-0.3,51.8],[-0.5,51.7],[-0.6,51.8]]]}},{"type":"Feature","properties":{"name":"M"},"geometry":{"type":"Polygon","coordinates":[[[-2.4,53.4],[-2.1,53.6],[-2.1,53.4],[-2.3,53.3],[-2.4,53.4]]]}},{"type":"Feature","properties":{"name":"ME"},"geometry":{"type":"Polygon","coordinates":[[[0.3,51.2],[1.0,51.5],[0.9,51.2],[0.4,51.1],[0.3,51.2]]]}},{"type":"Feature","properties":{"name":"MK"},"geometry":{"type":"Polygon","coordinates":[[[-1.1,51.9],[-0.5,52.3],[-0.5,51.9],[-1.0,51.8],[-1.1,51.9]]]}},{"type":"Feature","properties":{"name":"ML"},"geometry":{"type":"Polygon","coordinates":[[[-4.3,55.5],[-3.3,55.9],[-3.4,55.4],[-4.2,55.4],[-4.3,55.5]]]}},{"type":"Feature","properties":{"name":"N"},"geometry":{"type":"Polygon","coordinates":[[[-0.2,51.5],[-0.0,51.6],[-0.0,51.5],[-0.2,51.5]]]}},{"type":"Feature","properties":{"name":"NE"},"geometry":{"type":"Polygon","coordinates":[[[-2.6,54.9],[-1.3,55.6],[-1.5,54.8],[-2.5,54.8],[-2.6,54.9]]]}},{"type":"Feature","properties":{"name":"NG"},"geometry":{"type":"Polygon","coordinates":[[[-1.4,52.8],[ -0.5, 53.4],[-0.6,52.8],[-1.3,52.7],[-1.4,52.8]]]}},{"type":"Feature","properties":{"name":"NN"},"geometry":{"type":"Polygon","coordinates":[[[-1.4,52.0],[-0.5,52.5],[-0.6,52.0],[-1.3,51.9],[-1.4,52.0]]]}},{"type":"Feature","properties":{"name":"NP"},"geometry":{"type":"Polygon","coordinates":[[[-3.3,51.5],[-2.7,51.9],[-2.7,51.5],[-3.2,51.4],[-3.3,51.5]]]}},{"type":"Feature","properties":{"name":"NR"},"geometry":{"type":"Polygon","coordinates":[[[0.8,52.4],[1.8,53.0],[1.7,52.4],[0.9,52.3],[0.8,52.4]]]}},{"type":"Feature","properties":{"name":"NW"},"geometry":{"type":"Polygon","coordinates":[[[-0.3,51.5],[-0.1,51.6],[-0.1,51.5],[-0.3,51.4],[-0.3,51.5]]]}},{"type":"Feature","properties":{"name":"OL"},"geometry":{"type":"Polygon","coordinates":[[[-2.3,53.5],[-1.8,53.8],[-1.8,53.5],[-2.2,53.4],[-2.3,53.5]]]}},{"type":"Feature","properties":{"name":"OX"},"geometry":{"type":"Polygon","coordinates":[[[-1.8,51.5],[-0.8,52.2],[-0.9,51.5],[-1.7,51.4],[-1.8,51.5]]]}},{"type":"Feature","properties":{"name":"PA"},"geometry":{"type":"Polygon","coordinates":[[[-6.4,55.6],[-4.4,56.6],[-5.2,55.5],[-6.3,55.5],[-6.4,55.6]]]}},{"type":"Feature","properties":{"name":"PE"},"geometry":{"type":"Polygon","coordinates":[[[-0.8,52.4],[0.6,53.0],[0.5,52.4],[-0.7,52.3],[-0.8,52.4]]]}},{"type":"Feature","properties":{"name":"PH"},"geometry":{"type":"Polygon","coordinates":[[[-5.2,56.3],[-3.0,57.2],[-3.8,56.2],[-5.1,56.2],[-5.2,56.3]]]}},{"type":"Feature","properties":{"name":"PL"},"geometry":{"type":"Polygon","coordinates":[[[-4.8,50.3],[-3.8,50.8],[-4.0,50.2],[-4.7,50.2],[-4.8,50.3]]]}},{"type":"Feature","properties":{"name":"PO"},"geometry":{"type":"Polygon","coordinates":[[[-1.8,50.6],[-0.6,51.1],[-0.7,50.6],[-1.7,50.5],[-1.8,50.6]]]}},{"type":"Feature","properties":{"name":"PR"},"geometry":{"type":"Polygon","coordinates":[[[-3.1,53.6],[-2.5,54.0],[-2.5,53.6],[-3.0,53.5],[-3.1,53.6]]]}},{"type":"Feature","properties":{"name":"RG"},"geometry":{"type":"Polygon","coordinates":[[[-1.5,51.3],[-0.7,51.6],[-0.7,51.3],[-1.4,51.2],[-1.5,51.3]]]}},{"type":"Feature","properties":{"name":"RH"},"geometry":{"type":"Polygon","coordinates":[[[-0.6,51.0],[0.1,51.4],[0.0,51.0],[-0.5,50.9],[-0.6,51.0]]]}},{"type":"Feature","properties":{"name":"RM"},"geometry":{"type":"Polygon","coordinates":[[[0.1,51.5],[0.3,51.7],[0.3,51.5],[0.1,51.4], [0.1,51.5]]]}},{"type":"Feature","properties":{"name":"S"},"geometry":{"type":"Polygon","coordinates":[[[-1.8,53.2],[-1.0,53.6],[-1.1,53.2],[-1.7,53.1],[-1.8,53.2]]]}},{"type":"Feature","properties":{"name":"SA"},"geometry":{"type":"Polygon","coordinates":[[[-5.3,51.6],[-3.6,52.4],[-4.2,51.5],[-5.2,51.5],[-5.3,51.6]]]}},{"type":"Feature","properties":{"name":"SE"},"geometry":{"type":"Polygon","coordinates":[[[-0.1,51.4],[0.1,51.5],[0.1,51.4],[-0.1,51.4]]]}},{"type":"Feature","properties":{"name":"SG"},"geometry":{"type":"Polygon","coordinates":[[[-0.4,51.8],[0.2,52.2],[0.1,51.8],[-0.3,51.7],[-0.4,51.8]]]}},{"type":"Feature","properties":{"name":"SK"},"geometry":{"type":"Polygon","coordinates":[[[-2.4,53.2],[-1.7,53.6],[-1.8,53.2],[-2.3,53.1],[-2.4,53.2]]]}},{"type":"Feature","properties":{"name":"SL"},"geometry":{"type":"Polygon","coordinates":[[[-0.8,51.4],[-0.4,51.7],[-0.4,51.4],[-0.7,51.3],[-0.8,51.4]]]}},{"type":"Feature","properties":{"name":"SM"},"geometry":{"type":"Polygon","coordinates":[[[-0.3,51.3],[-0.1,51.4],[-0.1,51.3],[-0.2,51.3],[-0.3,51.3]]]}},{"type":"Feature","properties":{"name":"SN"},"geometry":{"type":"Polygon","coordinates":[[[-2.2,51.3],[-1.5,51.7],[-1.5,51.3],[-2.1,51.2],[-2.2,51.3]]]}},{"type":"Feature","properties":{"name":"SO"},"geometry":{"type":"Polygon","coordinates":[[[-1.8,50.8],[-1.1,51.2],[-1.1,50.8],[-1.7,50.7],[-1.8,50.8]]]}},{"type":"Feature","properties":{"name":"SP"},"geometry":{"type":"Polygon","coordinates":[[[-2.3,50.9],[-1.5,51.3],[-1.6,50.9],[-2.2,50.8],[-2.3,50.9]]]}},{"type":"Feature","properties":{"name":"SR"},"geometry":{"type":"Polygon","coordinates":[[[-1.6,54.8],[-1.3,55.0],[-1.3,54.8],[-1.5,54.7],[-1.6,54.8]]]}},{"type":"Feature","properties":{"name":"SS"},"geometry":{"type":"Polygon","coordinates":[[[0.4,51.5],[1.0,51.7],[0.9,51.5],[0.5,51.4],[0.4,51.5]]]}},{"type":"Feature","properties":{"name":"ST"},"geometry":{"type":"Polygon","coordinates":[[[-2.5,52.7],[-1.7,53.2],[-1.8,52.7],[-2.4,52.6],[-2.5,52.7]]]}},{"type":"Feature","properties":{"name":"SW"},"geometry":{"type":"Polygon","coordinates":[[[-0.25,51.4],[-0.1,51.5],[-0.1,51.4],[-0.25,51.4]]]}},{"type":"Feature","properties":{"name":"SY"},"geometry":{"type":"Polygon","coordinates":[[[-3.8,52.4],[-2.4,53.0],[-2.5,52.3],[-3.7,52.3],[-3.8,52.4]]]}},{"type":"Feature","properties":{"name":"TA"},"geometry":{"type":"Polygon","coordinates":[[[-3.7,50.8],[-2.7,51.3],[-2.8,50.8],[-3.6,50.7],[-3.7,50.8]]]}},{"type":"Feature","properties":{"name":"TD"},"geometry":{"type":"Polygon","coordinates":[[[-3.4,55.4],[-1.8,55.9],[-2.0,55.3],[-3.3,55.3],[-3.4,55.4]]]}},{"type":"Feature","properties":{"name":"TF"},"geometry":{"type":"Polygon","coordinates":[[[-2.7,52.6],[-2.3,52.8],[-2.3,52.6],[-2.6,52.5],[-2.7,52.6]]]}},{"type":"Feature","properties":{"name":"TN"},"geometry":{"type":"Polygon","coordinates":[[[0.0,50.9],[0.9,51.4],[0.8,50.9],[0.1,50.8],[0.0,50.9]]]}},{"type":"Feature","properties":{"name":"TQ"},"geometry":{"type":"Polygon","coordinates":[[[-4.1,50.3],[-3.4,50.7],[-3.5,50.2],[-4.0,50.2],[-4.1,50.3]]]}},{"type":"Feature","properties":{"name":"TR"},"geometry":{"type":"Polygon","coordinates":[[[-5.8,49.9],[-4.8,50.6],[-5.0,49.9],[-5.7,49.8],[-5.8,49.9]]]}},{"type":"Feature","properties":{"name":"TS"},"geometry":{"type":"Polygon","coordinates":[[[-1.6,54.4],[-0.8,54.7],[-0.9,54.4],[-1.5,54.3],[-1.6,54.4]]]}},{"type":"Feature","properties":{"name":"TW"},"geometry":{"type":"Polygon","coordinates":[[[-0.5,51.4],[-0.3,51.5],[-0.3,51.4],[-0.5,51.4]]]}},{"type":"Feature","properties":{"name":"UB"},"geometry":{"type":"Polygon","coordinates":[[[-0.5,51.4],[-0.3,51.6],[-0.3,51.4],[-0.5,51.4]]]}},{"type":"Feature","properties":{"name":"W"},"geometry":{"type":"Polygon","coordinates":[[[-0.4,51.5],[-0.1,51.6],[-0.2,51.4],[-0.4,51.4],[-0.4,51.5]]]}},{"type":"Feature","properties":{"name":"WA"},"geometry":{"type":"Polygon","coordinates":[[[-2.9,53.2],[-2.2,53.6],[-2.3,53.2],[-2.8,53.1],[-2.9,53.2]]]}},{"type":"Feature","properties":{"name":"WC"},"geometry":{"type":"Polygon","coordinates":[[[-0.14,51.5],[-0.1,51.52],[-0.1,51.5],[-0.14,51.5]]]}},{"type":"Feature","properties":{"name":"WD"},"geometry":{"type":"Polygon","coordinates":[[[-0.5,51.6],[-0.2,51.8],[-0.2,51.6],[-0.4,51.5],[-0.5,51.6]]]}},{"type":"Feature","properties":{"name":"WF"},"geometry":{"type":"Polygon","coordinates":[[[-1.8,53.6],[-1.2,53.9],[-1.3,53.6],[-1.7,53.5],[-1.8,53.6]]]}},{"type":"Feature","properties":{"name":"WN"},"geometry":{"type":"Polygon","coordinates":[[[-2.8,53.4],[-2.4,53.7],[-2.5,53.4],[-2.8,53.4]]]}},{"type":"Feature","properties":{"name":"WR"},"geometry":{"type":"Polygon","coordinates":[[[-2.6,52.0],[-1.8,52.4],[-1.9,52.0],[-2.5,51.9],[-2.6,52.0]]]}},{"type":"Feature","properties":{"name":"WS"},"geometry":{"type":"Polygon","coordinates":[[[-2.2,52.5],[-1.8,52.8],[-1.8,52.5],[-2.1,52.4],[-2.2,52.5]]]}},{"type":"Feature","properties":{"name":"WV"},"geometry":{"type":"Polygon","coordinates":[[[-2.4,52.5],[-2.0,52.8],[-2.0,52.5],[-2.3,52.4],[-2.4,52.5]]]}},{"type":"Feature","properties":{"name":"YO"},"geometry":{"type":"Polygon","coordinates":[[[-1.5,53.8],[ -0.2, 54.5],[-0.4,53.8],[-1.4,53.7],[-1.5,53.8]]]}},{"type":"Feature","properties":{"name":"ZE"},"geometry":{"type":"Polygon","coordinates":[[[-1.8,59.8],[-0.8,60.9],[-1.4,59.7],[-1.7,59.7],[-1.8,59.8]]]}}]};
+
         // --- Main Application Logic --- //
         
-        async function initializeMap() {
+        function initializeMap() {
             try {
                 processServiceData();
-                
-                const response = await fetch(GEOJSON_URL);
-                if (!response.ok) throw new Error(`Failed to download map data. Status: ${response.status}`);
-                const geoJsonData = await response.json();
-
                 geoJsonLayer = L.geoJSON(geoJsonData, {
                     style: styleFeature,
                     onEachFeature: onEachFeature
                 }).addTo(map);
-                
                 setupEventListeners();
                 addLegend();
             } catch (error) {
@@ -654,11 +656,9 @@ OX9,1,0,0
                 const match = row.Region.match(/^[A-Z]+/);
                 if (!match) return;
                 const area = match[0];
-
                 if (!serviceDataByArea.has(area)) {
                     serviceDataByArea.set(area, { hasSolar: false, hasHeatPump: false, hasEv: false });
                 }
-
                 const currentData = serviceDataByArea.get(area);
                 if (row['Solar Panels'] === '1') currentData.hasSolar = true;
                 if (row['Heat Pumps'] === '1') currentData.hasHeatPump = true;
@@ -670,28 +670,21 @@ OX9,1,0,0
             const showSolar = document.getElementById('solar-filter').checked;
             const showHeatPump = document.getElementById('heatpump-filter').checked;
             const showEv = document.getElementById('ev-filter').checked;
-
             const areaCode = feature.properties.name;
             const data = serviceDataByArea.get(areaCode);
-            
             let color = COLORS.none;
             let fillOpacity = 0.2;
-
             if (data) {
                 if (showSolar && data.hasSolar) { color = COLORS.solar; fillOpacity = 0.7; } 
                 else if (showHeatPump && data.hasHeatPump) { color = COLORS.heatpump; fillOpacity = 0.7; } 
                 else if (showEv && data.hasEv) { color = COLORS.ev; fillOpacity = 0.7; }
             }
-
             return { fillColor: color, weight: 1, opacity: 1, color: 'white', dashArray: '3', fillOpacity: fillOpacity };
         }
 
         function onEachFeature(feature, layer) {
             const areaCode = feature.properties.name;
-            // Set initial popup content
             layer.bindPopup(generatePopupContent(areaCode));
-
-            // Set interactions
             layer.on({
                 mouseover: e => e.target.setStyle({ weight: 4, color: '#333', dashArray: '' }),
                 mouseout: e => geoJsonLayer.resetStyle(e.target),
@@ -717,17 +710,14 @@ OX9,1,0,0
 
         function openEditPanel(areaCode, layer) {
             currentlyEditingArea = { code: areaCode, layer: layer };
-            // If the area isn't in our initial data, create a default entry for it.
             if (!serviceDataByArea.has(areaCode)) {
                 serviceDataByArea.set(areaCode, { hasSolar: false, hasHeatPump: false, hasEv: false });
             }
             const data = serviceDataByArea.get(areaCode);
-            
             document.getElementById('edit-panel-title').innerText = `Edit Services for ${areaCode}`;
             document.querySelector('#edit-panel-toggles [data-service="hasSolar"]').checked = data.hasSolar;
             document.querySelector('#edit-panel-toggles [data-service="hasHeatPump"]').checked = data.hasHeatPump;
             document.querySelector('#edit-panel-toggles [data-service="hasEv"]').checked = data.hasEv;
-            
             editPanel.classList.add('visible');
         }
 
@@ -741,10 +731,8 @@ OX9,1,0,0
             const service = e.target.dataset.service;
             const isEnabled = e.target.checked;
             const areaCode = currentlyEditingArea.code;
-            
             const data = serviceDataByArea.get(areaCode);
             data[service] = isEnabled;
-            
             currentlyEditingArea.layer.setStyle(styleFeature(currentlyEditingArea.layer.feature));
             currentlyEditingArea.layer.setPopupContent(generatePopupContent(areaCode));
         }
@@ -752,21 +740,12 @@ OX9,1,0,0
         function generateAndDownloadCsv() {
             let csvContent = "data:text/csv;charset=utf-8,";
             csvContent += "Area,Solar Panels,Heat Pumps,Ev Chargers\r\n";
-            
-            // Create a sorted array of the keys to ensure consistent CSV output
             const sortedAreas = [...serviceDataByArea.keys()].sort();
-
             sortedAreas.forEach(area => {
                 const services = serviceDataByArea.get(area);
-                const row = [
-                    area,
-                    services.hasSolar ? '1' : '0',
-                    services.hasHeatPump ? '1' : '0',
-                    services.hasEv ? '1' : '0'
-                ].join(',');
+                const row = [area, services.hasSolar ? '1' : '0', services.hasHeatPump ? '1' : '0', services.hasEv ? '1' : '0'].join(',');
                 csvContent += row + "\r\n";
             });
-            
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
@@ -788,11 +767,16 @@ OX9,1,0,0
             legend.onAdd = function (map) {
                 const div = L.DomUtil.create('div', 'legend');
                 let labels = ['<strong>Service Colour Key</strong>(Priority Order)'];
-                for (const service in COLORS) {
-                    if (service !== 'none') {
-                        let serviceName = service.charAt(0).toUpperCase() + service.slice(1);
-                        labels.push(`<i style="background:${COLORS[service]}"></i> ${serviceName}`);
-                    }
+                const COLORS_FOR_LEGEND = {
+                    solar: 'var(--solar-color)',
+                    heatpump: 'var(--heatpump-color)',
+                    ev: 'var(--ev-color)',
+                    none: 'var(--inactive-color)'
+                };
+                for (const service in COLORS_FOR_LEGEND) {
+                    let serviceName = service.charAt(0).toUpperCase() + service.slice(1);
+                    if (service === 'none') serviceName = "Inactive/None";
+                    labels.push(`<i style="background:${COLORS_FOR_LEGEND[service]}"></i> ${serviceName}`);
                 }
                 div.innerHTML = labels.join('<br>');
                 return div;
@@ -800,7 +784,6 @@ OX9,1,0,0
             legend.addTo(map);
         }
 
-        // --- Run the application --- //
         initializeMap();
     </script>
 </body>
