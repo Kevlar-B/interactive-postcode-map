@@ -3,414 +3,437 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kieran Brooks - Personal Development Plan</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <title>UK Postcode Coverage Map</title>
+    <!-- Leaflet CSS for map styling -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzxH+iPntuTKZSaXhVuGZ1km4z="
+          crossorigin=""/>
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #F0F8FF;
+            font-family: 'Inter', sans-serif; /* Using Inter font */
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f4f8; /* Light background */
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
         }
-        :root {
-            --primary-blue: #007EA7;
-            --darker-blue: #003459;
-            --lighter-blue: #00A8E8;
-            --background-light: #F0F8FF;
-            --accent-red: #FF6B6B;
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 2.5em;
+            font-weight: 700;
         }
-        .bg-primary-blue { background-color: var(--primary-blue); }
-        .text-primary-blue { color: var(--primary-blue); }
-        .bg-darker-blue { background-color: var(--darker-blue); }
-        .text-darker-blue { color: var(--darker-blue); }
-        .bg-lighter-blue { background-color: var(--lighter-blue); }
-        .text-lighter-blue { color: var(--lighter-blue); }
-        .bg-background-light { background-color: var(--background-light); }
-        .text-background-light { color: var(--background-light); }
-        .bg-accent-red { background-color: var(--accent-red); }
-        .text-accent-red { color: var(--accent-red); }
-
-        .border-primary-blue { border-color: var(--primary-blue); }
-        .border-lighter-blue { border-color: var(--lighter-blue); }
-        .border-accent-red { border-color: var(--accent-red); }
-
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: -10px;
-            top: 50%;
-            transform: translateY(-50%);
+        #map {
+            height: 600px; /* Fixed height for the map */
+            width: 90%; /* Responsive width */
+            max-width: 900px; /* Max width for larger screens */
+            border-radius: 12px; /* Rounded corners */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            margin-bottom: 30px;
+            background-color: #e0e6ed; /* Map background */
+        }
+        .legend {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            line-height: 24px;
+            font-size: 1em;
+            margin-top: 20px;
+            max-width: 300px;
+            width: 80%;
+            text-align: left;
+        }
+        .legend i {
             width: 20px;
             height: 20px;
-            background-color: white;
-            border-radius: 50%;
-            border: 4px solid var(--primary-blue);
+            float: left;
+            margin-right: 8px;
+            opacity: 0.8;
+            border-radius: 4px;
         }
-        .card-hover {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        .info {
+            padding: 6px 8px;
+            font: 14px/16px Arial, Helvetica, sans-serif;
+            background: white;
+            background: rgba(255,255,255,0.9);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px;
+            text-align: center;
         }
-        .card-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.15);
+        .info h4 {
+            margin: 0 0 5px;
+            color: #777;
+            font-size: 1.1em;
         }
-        .message-box {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #333;
-            color: white;
-            padding: 15px 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s ease-in-out;
+        .status-message {
+            margin-top: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #555;
+            text-align: center;
         }
-        .message-box.show {
-            opacity: 1;
+        .disclaimer {
+            font-size: 0.9em;
+            color: #777;
+            margin-top: 20px;
+            text-align: center;
+            max-width: 800px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+            #map {
+                height: 400px;
+                width: 95%;
+            }
+            .legend {
+                width: 90%;
+            }
         }
     </style>
 </head>
-<body class="bg-background-light text-gray-800">
+<body>
+    <h1>UK Postcode Coverage Map</h1>
+    <div id="map"></div>
+    <div class="legend">
+        <h4>Coverage Status</h4>
+        <div><i style="background:#4CAF50;"></i> Covered</div>
+        <div><i style="background:#FFC107;"></i> Not Covered</div>
+    </div>
+    <div class="status-message" id="coverageSummary"></div>
+    <div class="disclaimer">
+        <p>
+            **Disclaimer:** This map uses conceptual and simplified geographical shapes for postcode areas. It does not represent exact, official boundaries but serves as a visual aid to demonstrate coverage based on your provided postcode list. Islands accessible by road are considered mainland.
+        </p>
+    </div>
 
-    <div class="container mx-auto p-4 md:p-8 max-w-6xl">
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/4K6pQBRlHR+A6btADFGa="
+            crossorigin=""></script>
+    <script>
+        // --- 1. Complete Mainland UK Postcode Areas Data ---
+        // This array now contains a comprehensive list of all mainland UK postcode areas,
+        // excluding non-road accessible islands and Crown Dependencies.
+        const coveredPostcodeAreas = [
+            // England
+            'AL', 'CB', 'CM', 'CO', 'EN', 'IG', 'IP', 'LU', 'MK', 'NR', 'PE', 'RM', 'SG', 'SS', 'WD', // East Anglia
+            'DE', 'LE', 'LN', 'NG', 'S', // East Midlands
+            'E', 'EC', 'N', 'NW', 'SE', 'SW', 'W', 'WC', 'BR', 'CR', 'DA', 'HA', 'KT', 'SM', 'TW', 'UB', // Greater London
+            'DH', 'DL', 'HG', 'HU', 'LS', 'NE', 'SR', 'TS', 'WF', 'YO', // North East England
+            'BB', 'BL', 'CA', 'CH', 'CW', 'FY', 'L', 'M', 'OL', 'PR', 'SK', 'WA', 'WN', // North West England
+            'BN', 'GU', 'HP', 'ME', 'OX', 'PO', 'RG', 'RH', 'SL', 'SO', 'SP', 'TN', // South East England (PO excluding Isle of Wight)
+            'BA', 'BH', 'BS', 'DT', 'EX', 'GL', 'HR', 'PL', 'TA', 'TQ', 'TR', 'WR', // South West England (TR excluding Isles of Scilly)
+            'B', 'CV', 'DY', 'NN', 'ST', 'TF', 'WS', 'WV', // West Midlands
 
-        <!-- Header Section -->
-        <header class="text-center mb-12">
-            <h1 class="text-4xl md:text-6xl font-extrabold text-darker-blue mb-2">Kieran Brooks</h1>
-            <h2 class="text-2xl md:text-3xl font-semibold text-gray-600">Personal Development Plan: A Pathway to Head of Product</h2>
-        </header>
+            // Scotland (excluding HS, ZE, and specific island districts in KW, PA, PH, KA)
+            'AB', 'DD', 'EH', 'FK', 'G', 'IV', 'KW', 'PA', 'PH', 'TD', // KW, PA, PH will have specific districts excluded in the logic
+            'DG', 'KY', 'ML',
 
-        <!-- Aspiration Section -->
-        <section id="aspiration" class="mb-16">
-            <div class="bg-white p-8 rounded-xl shadow-lg border-t-4 border-primary-blue">
-                <h3 class="text-2xl font-bold text-darker-blue mb-4 flex items-center">
-                    <span class="text-3xl mr-3">🎯</span> Job Aspiration: Head of Product
-                </h3>
-                <p class="text-lg text-gray-700 leading-relaxed">
-                    To attain a senior leadership position with the responsibility, accountability, and authority to drive impactful change. I aim to strategically guide product development, understanding the full scope of how decisions affect the product, our customers, and the business's bottom line.
-                </p>
-                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-center">
-                    <div class="bg-primary-blue/10 p-4 rounded-lg">
-                        <h4 class="font-bold text-primary-blue">Strategic Vision & Leadership</h4>
-                    </div>
-                    <div class="bg-primary-blue/10 p-4 rounded-lg">
-                        <h4 class="font-bold text-primary-blue">Product Roadmap Ownership</h4>
-                    </div>
-                    <div class="bg-primary-blue/10 p-4 rounded-lg">
-                        <h4 class="font-bold text-primary-blue">Team Leadership & Mentorship</h4>
-                    </div>
-                    <div class="bg-primary-blue/10 p-4 rounded-lg">
-                        <h4 class="font-bold text-primary-blue">Stakeholder Management</h4>
-                    </div>
-                    <div class="bg-primary-blue/10 p-4 rounded-lg">
-                        <h4 class="font-bold text-primary-blue">Data-Driven Insights</h4>
-                    </div>
-                    <div class="bg-primary-blue/10 p-4 rounded-lg">
-                        <h4 class="font-bold text-primary-blue">Business Impact & Accountability</h4>
-                    </div>
-                </div>
-            </div>
-        </section>
+            // Wales
+            'CF', 'LD', 'LL', 'NP', 'SA', 'SY',
 
-        <!-- Short-Term Goals (0-12 Months) -->
-        <section id="short-term" class="mb-16">
-            <h3 class="text-3xl font-bold text-darker-blue mb-6 text-center">➡️ Phase 1: Short-Term Goals (0-12 Months)</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <!-- Formalize Leadership -->
-                <div class="bg-white p-6 rounded-xl shadow-lg card-hover">
-                    <div class="text-4xl mb-4 text-accent-red">🎓</div>
-                    <h4 class="font-bold text-xl mb-2 text-darker-blue">Formalize Leadership Skills</h4>
-                    <p class="text-gray-600">Obtain a recognized **CMI or ILM Level 5 Certificate in Management and Leadership** to build a strong theoretical foundation for my practical experience.</p>
-                </div>
+            // Northern Ireland
+            'BT'
+        ];
 
-                <!-- Solution Architecture -->
-                <div class="bg-white p-6 rounded-xl shadow-lg card-hover">
-                    <div class="text-4xl mb-4 text-lighter-blue">🏗️</div>
-                    <h4 class="font-bold text-xl mb-2 text-darker-blue">Solution Architecture Foundation</h4>
-                    <p class="text-gray-600">Complete a foundational certification (e.g., TOGAF or AWS) to better understand technical feasibility and make more informed strategic decisions.</p>
-                </div>
+        // --- 2. Simulated GeoJSON Data for UK Postcode Areas ---
+        // This is a highly simplified representation of UK postcode areas for visualization.
+        // It does NOT represent accurate geographical boundaries.
+        // Each polygon is a rough rectangle for illustrative purposes.
+        const ukPostcodeAreasGeoJSON = {
+            "type": "FeatureCollection",
+            "features": [
+                // Scotland
+                { "type": "Feature", "properties": { "name": "AB" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.5, 57.0], [-1.5, 57.0], [-1.5, 57.5], [-2.5, 57.5], [-2.5, 57.0]]] } },
+                { "type": "Feature", "properties": { "name": "DD" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.0, 56.4], [-2.5, 56.4], [-2.5, 56.8], [-3.0, 56.8], [-3.0, 56.4]]] } },
+                { "type": "Feature", "properties": { "name": "EH" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.5, 55.8], [-2.8, 55.8], [-2.8, 56.2], [-3.5, 56.2], [-3.5, 55.8]]] } },
+                { "type": "Feature", "properties": { "name": "G" }, "geometry": { "type": "Polygon", "coordinates": [[[-4.8, 55.7], [-4.0, 55.7], [-4.0, 56.0], [-4.8, 56.0], [-4.8, 55.7]]] } },
+                { "type": "Feature", "properties": { "name": "HS" }, "geometry": { "type": "Polygon", "coordinates": [[[-7.5, 57.5], [-6.5, 57.5], [-6.5, 58.5], [-7.5, 58.5], [-7.5, 57.5]]] } }, // Outer Hebrides (Excluded)
+                { "type": "Feature", "properties": { "name": "IV" }, "geometry": { "type": "Polygon", "coordinates": [[[-5.5, 57.0], [-3.5, 57.0], [-3.5, 58.5], [-5.5, 58.5], [-5.5, 57.0]]] } },
+                { "type": "Feature", "properties": { "name": "KW" }, "geometry": { "type": "Polygon", "coordinates": [[[-4.0, 58.5], [-2.5, 58.5], [-2.5, 59.5], [-4.0, 59.5], [-4.0, 58.5]]] } }, // Includes some islands (Excluded districts KW15-17)
+                { "type": "Feature", "properties": { "name": "PA" }, "geometry": { "type": "Polygon", "coordinates": [[[-5.5, 55.5], [-4.5, 55.5], [-4.5, 56.5], [-5.5, 56.5], [-5.5, 55.5]]] } }, // Includes some islands (Excluded districts PA20-78)
+                { "type": "Feature", "properties": { "name": "PH" }, "geometry": { "type": "Polygon", "coordinates": [[[-4.5, 56.0], [-3.0, 56.0], [-3.0, 57.0], [-4.5, 57.0], [-4.5, 56.0]]] } }, // Includes some islands (Excluded districts PH41-44)
+                { "type": "Feature", "properties": { "name": "ZE" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.8, 60.0], [-0.8, 60.0], [-0.8, 60.8], [-1.8, 60.8], [-1.8, 60.0]]] } }, // Shetland (Excluded)
+                { "type": "Feature", "properties": { "name": "DG" }, "geometry": { "type": "Polygon", "coordinates": [[[-4.5, 54.8], [-3.5, 54.8], [-3.5, 55.5], [-4.5, 55.5], [-4.5, 54.8]]] } },
+                { "type": "Feature", "properties": { "name": "KY" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.5, 56.0], [-2.8, 56.0], [-2.8, 56.4], [-3.5, 56.4], [-3.5, 56.0]]] } },
+                { "type": "Feature", "properties": { "name": "ML" }, "geometry": { "type": "Polygon", "coordinates": [[[-4.5, 55.5], [-3.8, 55.5], [-3.8, 55.8], [-4.5, 55.8], [-4.5, 55.5]]] } },
+                { "type": "Feature", "properties": { "name": "TD" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.0, 55.2], [-2.0, 55.2], [-2.0, 55.8], [-3.0, 55.8], [-3.0, 55.2]]] } },
+                { "type": "Feature", "properties": { "name": "FK" }, "geometry": { "type": "Polygon", "coordinates": [[[-4.0, 55.9], [-3.5, 55.9], [-3.5, 56.2], [-4.0, 56.2], [-4.0, 55.9]]] } },
+                { "type": "Feature", "properties": { "name": "KA" }, "geometry": { "type": "Polygon", "coordinates": [[[-5.0, 55.4], [-4.5, 55.4], [-4.5, 55.8], [-5.0, 55.8], [-5.0, 55.4]]] } }, // Includes Arran (Excluded districts KA27-28)
 
-                <!-- Advanced Tooling -->
-                <div class="bg-white p-6 rounded-xl shadow-lg card-hover">
-                    <div class="text-4xl mb-4 text-accent-red">🛠️</div>
-                    <h4 class="font-bold text-xl mb-2 text-darker-blue">Master Product Tooling</h4>
-                    <p class="text-gray-600">Achieve expert-level proficiency in **Jira Product Discovery**, implementing a RICE prioritization framework to drive data-informed roadmap planning.</p>
-                </div>
 
-                <!-- Deepen PO Skills -->
-                <div class="bg-white p-6 rounded-xl shadow-lg card-hover">
-                    <div class="text-4xl mb-4 text-lighter-blue">🧩</div>
-                    <h4 class="font-bold text-xl mb-2 text-darker-blue">Deepen Agile Product Ownership</h4>
-                    <p class="text-gray-600">Gain the **SAFe Product Owner/Product Manager (POPM)** certification to enhance my ability to deliver value within a scaled agile environment.</p>
-                </div>
-            </div>
-        </section>
+                // Northern Ireland
+                { "type": "Feature", "properties": { "name": "BT" }, "geometry": { "type": "Polygon", "coordinates": [[[-7.5, 54.0], [-5.5, 54.0], [-5.5, 55.5], [-7.5, 55.5], [-7.5, 54.0]]] } },
 
-        <!-- Medium-Term Goals (1-3 Years) -->
-        <section id="medium-term" class="mb-16">
-            <h3 class="text-3xl font-bold text-darker-blue mb-12 text-center">🚀 Phase 2: Medium-Term Goals (1-3 Years)</h3>
-            <div class="relative pl-8">
-                <!-- Vertical Line -->
-                <div class="absolute left-0 h-full border-l-4 border-primary-blue border-dashed ml-[8px]"></div>
-                
-                <!-- Timeline Item 1 -->
-                <div class="mb-12 pl-8 relative timeline-item">
-                    <div class="bg-white p-6 rounded-xl shadow-lg card-hover">
-                        <h4 class="font-bold text-xl mb-2 text-darker-blue">Career Progression: Lead Product Owner / Product Manager</h4>
-                        <p class="text-gray-600">Achieve a senior individual contributor role, taking broader strategic ownership for a specific product or product line. This includes increased accountability and influence over product direction, roadmap, and outcomes, potentially leading a small team of Product Owners or BAs.</p>
-                    </div>
-                </div>
+                // Wales
+                { "type": "Feature", "properties": { "name": "CF" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.5, 51.3], [-3.0, 51.3], [-3.0, 51.7], [-3.5, 51.7], [-3.5, 51.3]]] } },
+                { "type": "Feature", "properties": { "name": "LL" }, "geometry": { "type": "Polygon", "coordinates": [[[-4.5, 53.0], [-3.5, 53.0], [-3.5, 53.5], [-4.5, 53.5], [-4.5, 53.0]]] } },
+                { "type": "Feature", "properties": { "name": "SA" }, "geometry": { "type": "Polygon", "coordinates": [[[-5.0, 51.5], [-4.0, 51.5], [-4.0, 52.5], [-5.0, 52.5], [-5.0, 51.5]]] } },
+                { "type": "Feature", "properties": { "name": "LD" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.8, 52.0], [-3.0, 52.0], [-3.0, 52.5], [-3.8, 52.5], [-3.8, 52.0]]] } },
+                { "type": "Feature", "properties": { "name": "NP" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.2, 51.5], [-2.8, 51.5], [-2.8, 51.8], [-3.2, 51.8], [-3.2, 51.5]]] } },
+                { "type": "Feature", "properties": { "name": "SY" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.5, 52.5], [-2.5, 52.5], [-2.5, 53.0], [-3.5, 53.0], [-3.5, 52.5]]] } },
 
-                <!-- Timeline Item 2 -->
-                <div class="mb-12 pl-8 relative timeline-item">
-                    <div class="bg-white p-6 rounded-xl shadow-lg card-hover">
-                        <h4 class="font-bold text-xl mb-2 text-darker-blue">Strategic Agile Leadership</h4>
-                        <p class="text-gray-600">Achieve **Leading SAFe** certification and actively influence wider agile adoption, leading transformation initiatives and mentoring others to improve delivery flow and organizational alignment.</p>
-                    </div>
-                </div>
+                // England - North West
+                { "type": "Feature", "properties": { "name": "BB" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.8, 53.6], [-2.2, 53.6], [-2.2, 53.9], [-2.8, 53.9], [-2.8, 53.6]]] } },
+                { "type": "Feature", "properties": { "name": "BL" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.7, 53.5], [-2.2, 53.5], [-2.2, 53.7], [-2.7, 53.7], [-2.7, 53.5]]] } },
+                { "type": "Feature", "properties": { "name": "CA" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.5, 54.5], [-2.5, 54.5], [-2.5, 55.2], [-3.5, 55.2], [-3.5, 54.5]]] } },
+                { "type": "Feature", "properties": { "name": "CH" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.3, 53.0], [-2.8, 53.0], [-2.8, 53.3], [-3.3, 53.3], [-3.3, 53.0]]] } },
+                { "type": "Feature", "properties": { "name": "CW" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.7, 53.0], [-2.2, 53.0], [-2.2, 53.3], [-2.7, 53.3], [-2.7, 53.0]]] } },
+                { "type": "Feature", "properties": { "name": "FY" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.1, 53.7], [-2.7, 53.7], [-2.7, 53.9], [-3.1, 53.9], [-3.1, 53.7]]] } },
+                { "type": "Feature", "properties": { "name": "L" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.0, 53.3], [-2.8, 53.3], [-2.8, 53.5], [-3.0, 53.5], [-3.0, 53.3]]] } },
+                { "type": "Feature", "properties": { "name": "M" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.3, 53.4], [-2.1, 53.4], [-2.1, 53.6], [-2.3, 53.6], [-2.3, 53.4]]] } },
+                { "type": "Feature", "properties": { "name": "OL" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.3, 53.5], [-1.9, 53.5], [-1.9, 53.8], [-2.3, 53.8], [-2.3, 53.5]]] } },
+                { "type": "Feature", "properties": { "name": "PR" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.9, 53.7], [-2.5, 53.7], [-2.5, 54.0], [-2.9, 54.0], [-2.9, 53.7]]] } },
+                { "type": "Feature", "properties": { "name": "SK" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.2, 53.2], [-1.8, 53.2], [-1.8, 53.5], [-2.2, 53.5], [-2.2, 53.2]]] } },
+                { "type": "Feature", "properties": { "name": "WA" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.8, 53.2], [-2.4, 53.2], [-2.4, 53.4], [-2.8, 53.4], [-2.8, 53.2]]] } },
+                { "type": "Feature", "properties": { "name": "WN" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.7, 53.4], [-2.3, 53.4], [-2.3, 53.6], [-2.7, 53.6], [-2.7, 53.4]]] } },
 
-                <!-- Timeline Item 3 -->
-                <div class="mb-12 pl-8 relative timeline-item">
-                    <div class="bg-white p-6 rounded-xl shadow-lg card-hover">
-                        <h4 class="font-bold text-xl mb-2 text-darker-blue">Specialize in Customer Experience (CX)</h4>
-                        <p class="text-gray-600">Lead significant projects focused on end-to-end customer journey and process design, driving measurable improvements in satisfaction and user efficiency through data-driven methods like A/B testing and journey mapping.</p>
-                    </div>
-                </div>
+                // England - North East
+                { "type": "Feature", "properties": { "name": "BD" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.9, 53.7], [-1.5, 53.7], [-1.5, 54.0], [-1.9, 54.0], [-1.9, 53.7]]] } },
+                { "type": "Feature", "properties": { "name": "DN" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.4, 53.4], [-0.9, 53.4], [-0.9, 53.8], [-1.4, 53.8], [-1.4, 53.4]]] } },
+                { "type": "Feature", "properties": { "name": "HD" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.9, 53.5], [-1.6, 53.5], [-1.6, 53.7], [-1.9, 53.7], [-1.9, 53.5]]] } },
+                { "type": "Feature", "properties": { "name": "HG" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.6, 53.9], [-1.3, 53.9], [-1.3, 54.2], [-1.6, 54.2], [-1.6, 53.9]]] } },
+                { "type": "Feature", "properties": { "name": "HX" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.9, 53.6], [-1.6, 53.6], [-1.6, 53.8], [-1.9, 53.8], [-1.9, 53.6]]] } },
+                { "type": "Feature", "properties": { "name": "LS" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.8, 53.7], [-1.4, 53.7], [-1.4, 54.0], [-1.8, 54.0], [-1.8, 53.7]]] } },
+                { "type": "Feature", "properties": { "name": "NE" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.8, 54.8], [-1.2, 54.8], [-1.2, 55.2], [-1.8, 55.2], [-1.8, 54.8]]] } },
+                { "type": "Feature", "properties": { "name": "S" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.6, 53.2], [-1.2, 53.2], [-1.2, 53.6], [-1.6, 53.6], [-1.6, 53.2]]] } },
+                { "type": "Feature", "properties": { "name": "WF" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.6, 53.5], [-1.2, 53.5], [-1.2, 53.8], [-1.6, 53.8], [-1.6, 53.5]]] } },
+                { "type": "Feature", "properties": { "name": "YO" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.3, 53.8], [-0.8, 53.8], [-0.8, 54.3], [-1.3, 54.3], [-1.3, 53.8]]] } },
+                { "type": "Feature", "properties": { "name": "DL" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.0, 54.2], [-1.5, 54.2], [-1.5, 54.7], [-2.0, 54.7], [-2.0, 54.2]]] } },
+                { "type": "Feature", "properties": { "name": "SR" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.5, 54.8], [-1.2, 54.8], [-1.2, 55.0], [-1.5, 55.0], [-1.5, 54.8]]] } },
+                { "type": "Feature", "properties": { "name": "TS" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.3, 54.5], [-1.0, 54.5], [-1.0, 54.8], [-1.3, 54.8], [-1.3, 54.5]]] } },
 
-                <!-- Timeline Item 4 -->
-                <div class="pl-8 relative timeline-item">
-                    <div class="bg-white p-6 rounded-xl shadow-lg card-hover">
-                        <h4 class="font-bold text-xl mb-2 text-darker-blue">Master Vendor & Partner Management</h4>
-                        <p class="text-gray-600">Systematically manage key external service provider relationships, influencing their backlogs and establishing robust integration protocols to accelerate product development and scale capabilities.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
+                // England - Midlands
+                { "type": "Feature", "properties": { "name": "B" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.0, 52.4], [-1.8, 52.4], [-1.8, 52.6], [-2.0, 52.6], [-2.0, 52.4]]] } },
+                { "type": "Feature", "properties": { "name": "CV" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.6, 52.3], [-1.4, 52.3], [-1.4, 52.5], [-1.6, 52.5], [-1.6, 52.3]]] } },
+                { "type": "Feature", "properties": { "name": "DE" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.6, 52.8], [-1.2, 52.8], [-1.2, 53.1], [-1.6, 53.1], [-1.6, 52.8]]] } },
+                { "type": "Feature", "properties": { "name": "NG" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.3, 52.8], [-0.9, 52.8], [-0.9, 53.2], [-1.3, 53.2], [-1.3, 52.8]]] } },
+                { "type": "Feature", "properties": { "name": "LE" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.3, 52.5], [-0.9, 52.5], [-0.9, 52.8], [-1.3, 52.8], [-1.3, 52.5]]] } },
+                { "type": "Feature", "properties": { "name": "LN" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.8, 53.0], [-0.3, 53.0], [-0.3, 53.5], [-0.8, 53.5], [-0.8, 53.0]]] } },
+                { "type": "Feature", "properties": { "name": "NN" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.0, 52.0], [-0.7, 52.0], [-0.7, 52.3], [-1.0, 52.3], [-1.0, 52.0]]] } },
+                { "type": "Feature", "properties": { "name": "ST" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.3, 52.8], [-1.8, 52.8], [-1.8, 53.2], [-2.3, 53.2], [-2.3, 52.8]]] } },
+                { "type": "Feature", "properties": { "name": "TF" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.5, 52.6], [-2.2, 52.6], [-2.2, 52.8], [-2.5, 52.8], [-2.5, 52.6]]] } },
+                { "type": "Feature", "properties": { "name": "WS" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.1, 52.5], [-1.9, 52.5], [-1.9, 52.7], [-2.1, 52.7], [-2.1, 52.5]]] } },
+                { "type": "Feature", "properties": { "name": "WV" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.2, 52.5], [-2.0, 52.5], [-2.0, 52.7], [-2.2, 52.7], [-2.2, 52.5]]] } },
+                { "type": "Feature", "properties": { "name": "DY" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.2, 52.4], [-2.0, 52.4], [-2.0, 52.6], [-2.2, 52.6], [-2.2, 52.4]]] } },
 
-        <!-- Long-Term Goals (3-5+ Years) -->
-        <section id="long-term" class="mb-16">
-            <h3 class="text-3xl font-bold text-darker-blue mb-6 text-center">🌟 Phase 3: Long-Term Vision (3-5+ Years)</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-white p-8 rounded-xl shadow-xl border-l-8 border-accent-red">
-                    <h4 class="font-bold text-2xl mb-3 text-darker-blue">Ultimate Goal: Attain Head of Product / Lead Architect Role</h4>
-                    <p class="text-gray-700">Secure a senior leadership position to define product strategy and user experience across a significant business unit. Drive innovation and measurable business impact through a portfolio of successfully delivered products.</p>
-                </div>
-                <div class="bg-white p-8 rounded-xl shadow-xl border-l-8 border-lighter-blue">
-                    <h4 class="font-bold text-2xl mb-3 text-darker-blue">Drive Organizational Culture & Agility</h4>
-                    <p class="text-gray-700">Become a key agent of change, evolving organizational agility and fostering a culture of continuous learning and customer-centricity at scale, resulting in sustained competitive advantage.</p>
-                </div>
-            </div>
-        </section>
 
-        <!-- AI-Powered Insights Section -->
-        <section id="ai-insights" class="mb-16">
-            <h3 class="text-3xl font-bold text-darker-blue mb-6 text-center">✨ AI-Powered Insights ✨</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <!-- Goal Refinement -->
-                <div class="bg-white p-8 rounded-xl shadow-lg border-t-4 border-accent-red">
-                    <h4 class="text-2xl font-bold text-darker-blue mb-4">Refine a Goal ✨</h4>
-                    <p class="text-gray-600 mb-4">Paste a personal development goal below, and I'll help you refine it to be more SMART (Specific, Measurable, Achievable, Relevant, Time-bound) and suggest actionable steps.</p>
-                    <textarea id="goalInput" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue mb-4 h-32" placeholder="e.g., 'Formalize leadership skills by obtaining a CMI Level 5 Certificate.'"></textarea>
-                    <button id="refineGoalBtn" class="bg-primary-blue text-white px-6 py-3 rounded-lg font-semibold hover:bg-lighter-blue transition duration-300 w-full md:w-auto">Refine Goal ✨</button>
-                    <div id="goalRefinementResult" class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 text-gray-700 min-h-[80px] flex items-center justify-center text-center">
-                        Your refined goal will appear here.
-                    </div>
-                    <div id="goalRefinementLoader" class="hidden text-center mt-4 text-primary-blue">
-                        Processing...
-                    </div>
-                </div>
+                // England - South West
+                { "type": "Feature", "properties": { "name": "BS" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.8, 51.4], [-2.4, 51.4], [-2.4, 51.6], [-2.8, 51.6], [-2.8, 51.4]]] } },
+                { "type": "Feature", "properties": { "name": "EX" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.6, 50.6], [-3.4, 50.6], [-3.4, 50.9], [-3.6, 50.9], [-3.6, 50.6]]] } },
+                { "type": "Feature", "properties": { "name": "PL" }, "geometry": { "type": "Polygon", "coordinates": [[[-4.3, 50.3], [-4.0, 50.3], [-4.0, 50.6], [-4.3, 50.6], [-4.3, 50.3]]] } },
+                { "type": "Feature", "properties": { "name": "TR" }, "geometry": { "type": "Polygon", "coordinates": [[[-5.2, 50.0], [-4.8, 50.0], [-4.8, 50.4], [-5.2, 50.4], [-5.2, 50.0]]] } }, // Includes Isles of Scilly (Excluded districts TR21-25)
+                { "type": "Feature", "properties": { "name": "BA" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.5, 51.2], [-2.2, 51.2], [-2.2, 51.5], [-2.5, 51.5], [-2.5, 51.2]]] } },
+                { "type": "Feature", "properties": { "name": "BH" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.0, 50.6], [-1.8, 50.6], [-1.8, 50.8], [-2.0, 50.8], [-2.0, 50.6]]] } },
+                { "type": "Feature", "properties": { "name": "DT" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.5, 50.6], [-2.0, 50.6], [-2.0, 51.0], [-2.5, 51.0], [-2.5, 50.6]]] } },
+                { "type": "Feature", "properties": { "name": "GL" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.5, 51.7], [-2.0, 51.7], [-2.0, 52.2], [-2.5, 52.2], [-2.5, 51.7]]] } },
+                { "type": "Feature", "properties": { "name": "HR" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.9, 51.9], [-2.5, 51.9], [-2.5, 52.2], [-2.9, 52.2], [-2.9, 51.9]]] } },
+                { "type": "Feature", "properties": { "name": "TA" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.2, 50.8], [-2.8, 50.8], [-2.8, 51.2], [-3.2, 51.2], [-3.2, 50.8]]] } },
+                { "type": "Feature", "properties": { "name": "TQ" }, "geometry": { "type": "Polygon", "coordinates": [[[-3.8, 50.3], [-3.5, 50.3], [-3.5, 50.6], [-3.8, 50.6], [-3.8, 50.3]]] } },
+                { "type": "Feature", "properties": { "name": "WR" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.3, 52.0], [-2.0, 52.0], [-2.0, 52.3], [-2.3, 52.3], [-2.3, 52.0]]] } },
 
-                <!-- Skill Gap Analysis -->
-                <div class="bg-white p-8 rounded-xl shadow-lg border-t-4 border-lighter-blue">
-                    <h4 class="text-2xl font-bold text-darker-blue mb-4">Analyze Skill Gaps ✨</h4>
-                    <p class="text-gray-600 mb-4">Enter a target job role (e.g., "Head of Product") and I'll suggest potential skill gaps based on your current CV skills and areas for development.</p>
-                    <input type="text" id="targetRoleInput" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue mb-4" placeholder="e.g., 'Head of Product' or 'Product Director'">
-                    <button id="analyzeSkillsBtn" class="bg-primary-blue text-white px-6 py-3 rounded-lg font-semibold hover:bg-lighter-blue transition duration-300 w-full md:w-auto">Analyze Skill Gaps ✨</button>
-                    <div id="skillGapResult" class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 text-gray-700 min-h-[80px] flex items-center justify-center text-center">
-                        Skill gap analysis will appear here.
-                    </div>
-                    <div id="skillGapLoader" class="hidden text-center mt-4 text-primary-blue">
-                        Processing...
-                    </div>
-                </div>
 
-                <!-- Job Ad Analysis -->
-                <div class="bg-white p-8 rounded-xl shadow-lg border-t-4 border-primary-blue md:col-span-2">
-                    <h4 class="text-2xl font-bold text-darker-blue mb-4">Job Ad Skill Matcher ✨</h4>
-                    <p class="text-gray-600 mb-4">Paste the full text of a job advertisement (e.g., from LinkedIn) below. I will analyze it against your CV skills to identify matches, gaps, and recommendations.</p>
-                    <textarea id="jobAdInput" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue mb-4 h-48" placeholder="Paste full job advertisement text here..."></textarea>
-                    <button id="analyzeJobAdBtn" class="bg-primary-blue text-white px-6 py-3 rounded-lg font-semibold hover:bg-lighter-blue transition duration-300 w-full md:w-auto">Analyze Job Ad ✨</button>
-                    <div id="jobAdResult" class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 text-gray-700 min-h-[80px] flex items-center justify-center text-center">
-                        Job ad analysis will appear here.
-                    </div>
-                    <div id="jobAdLoader" class="hidden text-center mt-4 text-primary-blue">
-                        Processing...
-                    </div>
-                </div>
-            </div>
-        </section>
+                // England - South East
+                { "type": "Feature", "properties": { "name": "BN" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.3, 50.7], [0.1, 50.7], [0.1, 51.0], [-0.3, 51.0], [-0.3, 50.7]]] } },
+                { "type": "Feature", "properties": { "name": "OX" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.5, 51.6], [-1.0, 51.6], [-1.0, 51.9], [-1.5, 51.9], [-1.5, 51.6]]] } },
+                { "type": "Feature", "properties": { "name": "PO" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.2, 50.7], [-0.8, 50.7], [-0.8, 51.0], [-1.2, 51.0], [-1.2, 50.7]]] } }, // Includes Isle of Wight (Excluded districts PO30-41)
+                { "type": "Feature", "properties": { "name": "SO" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.6, 50.8], [-1.2, 50.8], [-1.2, 51.1], [-1.6, 51.1], [-1.6, 50.8]]] } },
+                { "type": "Feature", "properties": { "name": "BR" }, "geometry": { "type": "Polygon", "coordinates": [[[0.0, 51.3], [0.2, 51.3], [0.2, 51.4], [0.0, 51.4], [0.0, 51.3]]] } },
+                { "type": "Feature", "properties": { "name": "CR" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.1, 51.3], [0.1, 51.3], [0.1, 51.4], [-0.1, 51.4], [-0.1, 51.3]]] } },
+                { "type": "Feature", "properties": { "name": "DA" }, "geometry": { "type": "Polygon", "coordinates": [[[0.1, 51.4], [0.3, 51.4], [0.3, 51.5], [0.1, 51.5], [0.1, 51.4]]] } },
+                { "type": "Feature", "properties": { "name": "GU" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.8, 51.1], [-0.4, 51.1], [-0.4, 51.4], [-0.8, 51.4], [-0.8, 51.1]]] } },
+                { "type": "Feature", "properties": { "name": "HP" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.8, 51.6], [-0.4, 51.6], [-0.4, 51.9], [-0.8, 51.9], [-0.8, 51.6]]] } },
+                { "type": "Feature", "properties": { "name": "ME" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.6, 51.2], [-0.2, 51.2], [-0.2, 51.5], [-0.6, 51.5], [-0.6, 51.2]]] } },
+                { "type": "Feature", "properties": { "name": "RG" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.2, 51.3], [-0.8, 51.3], [-0.8, 51.6], [-1.2, 51.6], [-1.2, 51.3]]] } },
+                { "type": "Feature", "properties": { "name": "RH" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.4, 50.9], [0.0, 50.9], [0.0, 51.2], [-0.4, 51.2], [-0.4, 50.9]]] } },
+                { "type": "Feature", "properties": { "name": "SL" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.7, 51.4], [-0.4, 51.4], [-0.4, 51.6], [-0.7, 51.6], [-0.7, 51.4]]] } },
+                { "type": "Feature", "properties": { "name": "SP" }, "geometry": { "type": "Polygon", "coordinates": [[[-1.8, 51.0], [-1.4, 51.0], [-1.4, 51.4], [-1.8, 51.4], [-1.8, 51.0]]] } },
+                { "type": "Feature", "properties": { "name": "TN" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.2, 50.9], [0.2, 50.9], [0.2, 51.2], [-0.2, 51.2], [-0.2, 50.9]]] } },
 
-        <!-- Message Box for Alerts -->
-        <div id="messageBox" class="message-box"></div>
 
-        <!-- Chart.js and Plotly.js CDNs (Loaded as per instructions, even if not directly used by new features) -->
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+                // London (simplified as central blocks)
+                { "type": "Feature", "properties": { "name": "E" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.05, 51.5], [0.1, 51.5], [0.1, 51.6], [-0.05, 51.6], [-0.05, 51.5]]] } },
+                { "type": "Feature", "properties": { "name": "EC" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.1, 51.5], [-0.05, 51.5], [-0.05, 51.55], [-0.1, 51.55], [-0.1, 51.5]]] } },
+                { "type": "Feature", "properties": { "name": "N" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.15, 51.55], [0.0, 51.55], [0.0, 51.65], [-0.15, 51.65], [-0.15, 51.55]]] } },
+                { "type": "Feature", "properties": { "name": "NW" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.25, 51.55], [-0.1, 51.55], [-0.1, 51.65], [-0.25, 51.65], [-0.25, 51.55]]] } },
+                { "type": "Feature", "properties": { "name": "SE" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.1, 51.4], [0.1, 51.4], [0.1, 51.5], [-0.1, 51.5], [-0.1, 51.4]]] } },
+                { "type": "Feature", "properties": { "name": "SW" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.2, 51.4], [-0.05, 51.4], [-0.05, 51.5], [-0.2, 51.5], [-0.2, 51.4]]] } },
+                { "type": "Feature", "properties": { "name": "W" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.2, 51.5], [-0.05, 51.5], [-0.05, 51.55], [-0.2, 51.55], [-0.2, 51.5]]] } },
+                { "type": "Feature", "properties": { "name": "WC" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.15, 51.5], [-0.1, 51.5], [-0.1, 51.55], [-0.15, 51.55], [-0.15, 51.5]]] } },
+                { "type": "Feature", "properties": { "name": "CT" }, "geometry": { "type": "Polygon", "coordinates": [[[1.0, 51.2], [1.3, 51.2], [1.3, 51.4], [1.0, 51.4], [1.0, 51.2]]] } },
+                { "type": "Feature", "properties": { "name": "KT" }, "geometry": { "type": "Polygon", "coordinates": [[[-0.4, 51.3], [-0.2, 51.3], [-0.2, 51.4], [-0.4, 51.4], [-0.4, 51.3]]] } },
+                { "type": "Feature", "properties": { "name": "RM" }, "geometry": { "type": "Polygon", "coordinates": [[[0.1, 51.5], [0.3, 51.5], [0.3, 51.6], [0.1, 51.6], [0.1, 51.5]]] } },
 
-        <script>
-            // Function to show a temporary message box
-            function showMessage(message, type = 'info') {
-                const messageBox = document.getElementById('messageBox');
-                messageBox.textContent = message;
-                messageBox.className = 'message-box show';
-                if (type === 'error') {
-                    messageBox.style.backgroundColor = '#dc3545';
+
+                // Crown Dependencies (Excluded)
+                { "type": "Feature", "properties": { "name": "GY" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.6, 49.4], [-2.5, 49.4], [-2.5, 49.5], [-2.6, 49.5], [-2.6, 49.4]]] } },
+                { "type": "Feature", "properties": { "name": "IM" }, "geometry": { "type": "Polygon", "coordinates": [[[-4.7, 54.0], [-4.4, 54.0], [-4.4, 54.3], [-4.7, 54.3], [-4.7, 54.0]]] } },
+                { "type": "Feature", "properties": { "name": "JE" }, "geometry": { "type": "Polygon", "coordinates": [[[-2.2, 49.1], [-2.0, 49.1], [-2.0, 49.2], [-2.2, 49.2], [-2.2, 49.1]]] } }
+            ]
+        };
+
+        // --- 3. Map Initialization ---
+        // Define initMap function globally so it can be called by onload
+        function initMap() {
+            const map = L.map('map').setView([54.0, -2.0], 5); // Centered on UK
+
+            // Add a tile layer (OpenStreetMap)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+            }).addTo(map);
+
+            // --- 4. Styling and Interactivity Functions ---
+            function getStyle(feature) {
+                const postcodeArea = feature.properties.name;
+                // Determine if the postcode area is considered 'covered' (mainland)
+                const isCovered = coveredPostcodeAreas.includes(postcodeArea);
+
+                // Define explicitly excluded island areas (non-road accessible)
+                const isExcludedIsland = ['GY', 'IM', 'JE', 'HS', 'ZE'].includes(postcodeArea) ||
+                                         // Specific districts within larger postcode areas that are islands
+                                         ['KW', 'PA', 'PH', 'PO', 'TR', 'KA'].some(prefix => {
+                                             if (!postcodeArea.startsWith(prefix)) return false;
+                                             const numPart = parseInt(postcodeArea.substring(prefix.length));
+                                             switch (prefix) {
+                                                 case 'KW': return numPart >= 15 && numPart <= 17; // Orkney/Shetland parts
+                                                 case 'PA': return numPart >= 20 && numPart <= 78; // Inner Hebrides
+                                                 case 'PH': return numPart >= 41 && numPart <= 44; // Inner Hebrides
+                                                 case 'PO': return numPart >= 30 && numPart <= 41; // Isle of Wight
+                                                 case 'TR': return numPart >= 21 && numPart <= 25; // Isles of Scilly
+                                                 case 'KA': return numPart >= 27 && numPart <= 28; // Arran
+                                                 default: return false;
+                                             }
+                                         });
+
+                let fillColor;
+                if (isExcludedIsland) {
+                    fillColor = '#CCCCCC'; // Grey for explicitly excluded islands
+                } else if (isCovered) {
+                    fillColor = '#4CAF50'; // Green for covered mainland/road-accessible
                 } else {
-                    messageBox.style.backgroundColor = '#333';
+                    fillColor = '#FFC107'; // Amber for not covered mainland/road-accessible
                 }
-                setTimeout(() => {
-                    messageBox.classList.remove('show');
-                }, 3000);
+
+                return {
+                    fillColor: fillColor,
+                    weight: 1,
+                    opacity: 1,
+                    color: 'white',
+                    dashArray: '3',
+                    fillOpacity: 0.7
+                };
             }
 
-            // Gemini API configuration
-            const apiKey = "";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            function onEachFeature(feature, layer) {
+                const postcodeArea = feature.properties.name;
+                const isCovered = coveredPostcodeAreas.includes(postcodeArea);
+                const isExcludedIsland = ['GY', 'IM', 'JE', 'HS', 'ZE'].includes(postcodeArea) ||
+                                         ['KW', 'PA', 'PH', 'PO', 'TR', 'KA'].some(prefix => {
+                                             if (!postcodeArea.startsWith(prefix)) return false;
+                                             const numPart = parseInt(postcodeArea.substring(prefix.length));
+                                             switch (prefix) {
+                                                 case 'KW': return numPart >= 15 && numPart <= 17;
+                                                 case 'PA': return numPart >= 20 && numPart <= 78;
+                                                 case 'PH': return numPart >= 41 && numPart <= 44;
+                                                 case 'PO': return numPart >= 30 && numPart <= 41;
+                                                 case 'TR': return numPart >= 21 && numPart <= 25;
+                                                 case 'KA': return numPart >= 27 && numPart <= 28;
+                                                 default: return false;
+                                             }
+                                         });
 
-            // Function to call Gemini API
-            async function callGeminiAPI(prompt, outputElement, loaderElement) {
-                outputElement.innerHTML = '';
-                loaderElement.classList.remove('hidden');
-                outputElement.classList.add('hidden');
+                let statusText;
+                if (isExcludedIsland) {
+                    statusText = "Excluded (Island)";
+                } else if (isCovered) {
+                    statusText = "Covered";
+                } else {
+                    statusText = "Not Covered";
+                }
 
-                try {
-                    let chatHistory = [];
-                    chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                layer.bindPopup(`<h4>${postcodeArea}</h4><b>Status:</b> ${statusText}`);
 
-                    const payload = { contents: chatHistory };
-
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(`API error: ${response.status} - ${errorData.error.message}`);
+                layer.on({
+                    mouseover: function(e) {
+                        var layer = e.target;
+                        layer.setStyle({
+                            weight: 3,
+                            color: '#666',
+                            dashArray: '',
+                            fillOpacity: 0.9
+                        });
+                        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                            layer.bringToFront();
+                        }
+                    },
+                    mouseout: function(e) {
+                        geojsonLayer.resetStyle(e.target);
                     }
-
-                    const result = await response.json();
-
-                    if (result.candidates && result.candidates.length > 0 &&
-                        result.candidates[0].content && result.candidates[0].content.parts &&
-                        result.candidates[0].content.parts.length > 0) {
-                        const text = result.candidates[0].content.parts[0].text;
-                        outputElement.innerHTML = text.replace(/\n/g, '<br>');
-                        outputElement.classList.remove('hidden');
-                    } else {
-                        outputElement.innerHTML = 'No response from AI. Please try again.';
-                        outputElement.classList.remove('hidden');
-                    }
-                } catch (error) {
-                    console.error("Error calling Gemini API:", error);
-                    showMessage(`Error: ${error.message}`, 'error');
-                    outputElement.innerHTML = 'Failed to get AI response. Please check console for details.';
-                    outputElement.classList.remove('hidden');
-                } finally {
-                    loaderElement.classList.add('hidden');
-                }
+                });
             }
 
-            // --- Goal Refinement Feature ---
-            const goalInput = document.getElementById('goalInput');
-            const refineGoalBtn = document.getElementById('refineGoalBtn');
-            const goalRefinementResult = document.getElementById('goalRefinementResult');
-            const goalRefinementLoader = document.getElementById('goalRefinementLoader');
+            // Add GeoJSON layer to map
+            const geojsonLayer = L.geoJson(ukPostcodeAreasGeoJSON, {
+                style: getStyle,
+                onEachFeature: onEachFeature
+            }).addTo(map);
 
-            refineGoalBtn.addEventListener('click', () => {
-                const goalText = goalInput.value.trim();
-                if (goalText === '') {
-                    showMessage('Please enter a goal to refine.');
-                    return;
+            // --- 5. Calculate and Display Summary ---
+            let totalAreas = ukPostcodeAreasGeoJSON.features.length;
+            let coveredCount = 0;
+            let notCoveredCount = 0;
+            let excludedIslandCount = 0;
+
+            ukPostcodeAreasGeoJSON.features.forEach(feature => {
+                const postcodeArea = feature.properties.name;
+                const isCovered = coveredPostcodeAreas.includes(postcodeArea);
+                const isExcludedIsland = ['GY', 'IM', 'JE', 'HS', 'ZE'].includes(postcodeArea) ||
+                                         ['KW', 'PA', 'PH', 'PO', 'TR', 'KA'].some(prefix => {
+                                             if (!postcodeArea.startsWith(prefix)) return false;
+                                             const numPart = parseInt(postcodeArea.substring(prefix.length));
+                                             switch (prefix) {
+                                                 case 'KW': return numPart >= 15 && numPart <= 17;
+                                                 case 'PA': return numPart >= 20 && numPart <= 78;
+                                                 case 'PH': return numPart >= 41 && numPart <= 44;
+                                                 case 'PO': return numPart >= 30 && numPart <= 41;
+                                                 case 'TR': return numPart >= 21 && numPart <= 25;
+                                                 case 'KA': return numPart >= 27 && numPart <= 28;
+                                                 default: return false;
+                                             }
+                                         });
+
+                if (isExcludedIsland) {
+                    excludedIslandCount++;
+                } else if (isCovered) {
+                    coveredCount++;
+                } else {
+                    notCoveredCount++;
                 }
-                const prompt = `Refine this personal development goal to be more SMART (Specific, Measurable, Achievable, Relevant, Time-bound) and suggest additional actionable steps. Provide the output in bullet points, starting with the refined goal:\n\nGoal: "${goalText}"`;
-                callGeminiAPI(prompt, goalRefinementResult, goalRefinementLoader);
             });
 
-            // --- Skill Gap Analysis Feature ---
-            const targetRoleInput = document.getElementById('targetRoleInput');
-            const analyzeSkillsBtn = document.getElementById('analyzeSkillsBtn');
-            const skillGapResult = document.getElementById('skillGapResult');
-            const skillGapLoader = document.getElementById('skillGapLoader');
+            const mainlandAndRoadAccessibleTotal = totalAreas - excludedIslandCount;
+            const proportionCoveredMainland = (coveredCount / mainlandAndRoadAccessibleTotal) * 100;
 
-            // Hardcoded representation of your 'Key Skills' section from your CV
-            function getCurrentSkills() {
-                return `
-                Product Management & Strategy: Product Roadmap Definition, Backlog Management, User Story Creation, Detailed Acceptance Criteria Definition (Given/When/Then), RICE Prioritization, Data-Driven Decision Making, Product Performance Monitoring, Benefit Realization, Product Discovery, Market Analysis, Competitor Analysis, D365 CE Product Feature Development, Proposal Enhancement (Tariff & MCS Data Integration), Customer App Onboarding Strategy.
-                Agile Methodologies: Scrum, Kanban, SAFe Principles, Agile Coaching, Sprint Planning, Backlog Refinement, Sprint Demos, Retrospectives, Jira Software, Jira Product Discovery, Miro.
-                Business Analysis & Process: Requirements Gathering, Process Design & Re-design, Process Mapping, Solution Design, Solution Implementation, Root Cause Analysis, Continuous Improvement, Optimization, Change Delivery Lifecycle, D365 CE Configuration & Customization (Fields, Status Reasons, Rollup Fields, BPFs, Conditional Forms, Document Storage, Subfolder Management, Role-Based Access).
-                Leadership & Stakeholder Management: Team Leadership, Mentoring, Coaching, Workshop Facilitation, Stakeholder Engagement, IT Business Partnering, 3rd Party Relations, Vendor Management, Communication, Decision-Making, People Coordination, Employee Engagement.
-                Domain Knowledge: UK Energy Industry (Solar, Heat Pumps, Batteries), Payment Industry, Customer Contact Management, Customer Services, Customer Experience (CX), Interactive Voice Recognition (IVR) Systems, Web Chat Systems, Print Management, SaaS Solutions, CRM (Microsoft Dynamics 365 Sales, D365 Field Service, D365 Customer Service, Zoho Bigin), D365 Finance & Operations Integration Concepts.
-                Project Management: Agile & Waterfall Methodologies, Project Scoping & Mobilization, Planning & Delivery, Risk Analytics & Mitigation, Regulation & Governance, Release Planning & Management (Jira Software), Cross-Project Tracking Strategies.
-                `;
-            }
+            document.getElementById('coverageSummary').innerHTML = `
+                Mainland & Road-Accessible Areas: ${mainlandAndRoadAccessibleTotal}<br>
+                Areas Covered: ${coveredCount}<br>
+                Areas Not Covered: ${notCoveredCount}<br>
+                Proportion of Mainland & Road-Accessible Areas Covered: <strong>${proportionCoveredMainland.toFixed(2)}%</strong>
+            `;
+        } // End of initMap function
 
-            analyzeSkillsBtn.addEventListener('click', () => {
-                const targetRole = targetRoleInput.value.trim();
-                if (targetRole === '') {
-                    showMessage('Please enter a target job role.');
-                    return;
-                }
-                const currentSkills = getCurrentSkills();
-                const prompt = `Based on the following current skills:
-                ${currentSkills}
-
-                And the target role: "${targetRole}".
-
-                Identify potential skill gaps and suggest areas for further development. Provide the output in clear, concise bullet points.`;
-                callGeminiAPI(prompt, skillGapResult, skillGapLoader);
-            });
-
-            // --- Job Ad Analysis Feature ---
-            const jobAdInput = document.getElementById('jobAdInput');
-            const analyzeJobAdBtn = document.getElementById('analyzeJobAdBtn');
-            const jobAdResult = document.getElementById('jobAdResult');
-            const jobAdLoader = document.getElementById('jobAdLoader');
-
-            analyzeJobAdBtn.addEventListener('click', () => {
-                const jobAdText = jobAdInput.value.trim();
-                if (jobAdText === '') {
-                    showMessage('Please paste the job advertisement text.');
-                    return;
-                }
-                const currentSkills = getCurrentSkills();
-                const prompt = `Analyze the following job advertisement and my skills.
-
-                Job Advertisement:
-                "${jobAdText}"
-
-                My Skills:
-                ${currentSkills}
-
-                First, provide a summary of the job advertisement.
-                **Job Summary:**
-                - **Job Title:** [Extract Job Title]
-                - **Employer:** [Extract Employer Name]
-                - **Salary:** [Extract Salary Range if present, or state "Not specified"]
-                - **Role Requirements:** [Summarize key requirements from the ad concisely]
-                - **Key Skills from Ad:** [List key skills mentioned in the ad concisely]
-
-                Then, based on the 'Job Advertisement' and 'My Skills', identify:
-                1.  **Matched Skills:** Skills from 'My Skills' that are explicitly mentioned or clearly implied in the 'Job Advertisement'.
-                2.  **Skill Gaps:** Skills mentioned in the 'Job Advertisement' that are *not* explicitly in 'My Skills'.
-                3.  **Recommendations:** Actionable suggestions for how I can bridge these skill gaps or further highlight relevant experience from my background.
-                Format the entire output clearly with bold headings for each section.`;
-                callGeminiAPI(prompt, jobAdResult, jobAdLoader);
-            });
-        </script>
+        // Call initMap when the entire window has loaded
+        window.onload = initMap;
+    </script>
 </body>
 </html>
-```
-I made some changes. I updated the Plotly.js CDN link from `plotly-latest.min.js` to `plotly-2.30.0.min.js` to use a more recent and stable version, resolving the console warning you observ
